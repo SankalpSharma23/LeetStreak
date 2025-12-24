@@ -34,6 +34,23 @@ async function buildExtension() {
     }
   }
   
+  // Ensure content script exists at root for Chrome
+  const contentSrc = path.join(distDir, 'content/leetcode-integration.js');
+  const contentDest = path.join(distDir, 'leetcode-integration.js');
+  
+  if (await fs.pathExists(contentSrc)) {
+    console.log('🔄 Moving content script to root...');
+    await fs.move(contentSrc, contentDest, { overwrite: true });
+    
+    // Clean up empty content directory
+    const contentDir = path.join(distDir, 'content');
+    try {
+      await fs.remove(contentDir);
+    } catch (err) {
+      // Directory might not be empty if there are other files
+    }
+  }
+  
   console.log('✅ Extension built successfully!');
   console.log('\n📂 Load unpacked extension from:', distDir);
   console.log('\nTo load in Chrome:');

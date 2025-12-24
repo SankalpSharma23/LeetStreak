@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(({ mode }) => {
   // Check if we're building the service worker
   const isServiceWorker = process.env.BUILD_TARGET === 'service-worker';
+  // Check if we're building the content script
+  const isContentScript = process.env.BUILD_TARGET === 'content-script';
 
   if (isServiceWorker) {
     // Separate config for service worker
@@ -22,6 +24,34 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
           output: {
             entryFileNames: 'service-worker.js',
+            inlineDynamicImports: true,
+          }
+        },
+        outDir: 'dist',
+        emptyOutDir: false,
+        sourcemap: false,
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src')
+        }
+      }
+    };
+  }
+
+  if (isContentScript) {
+    // Separate config for content script
+    return {
+      build: {
+        lib: {
+          entry: path.resolve(__dirname, 'src/content/leetcode-integration.js'),
+          name: 'ContentScript',
+          fileName: 'leetcode-integration',
+          formats: ['iife']
+        },
+        rollupOptions: {
+          output: {
+            entryFileNames: 'leetcode-integration.js',
             inlineDynamicImports: true,
           }
         },

@@ -33,13 +33,35 @@ function ProblemQueue() {
     const problem = {
       id: Date.now(),
       title: newProblem.trim(),
+      slug: extractSlug(newProblem.trim()),
       url: extractLeetCodeUrl(newProblem.trim()),
-      addedAt: Date.now()
+      addedAt: Date.now(),
+      status: 'pending', // pending, in-progress, completed
+      difficulty: 'Medium'
     };
 
     saveProblems([...problems, problem]);
     setNewProblem('');
     setShowInput(false);
+  };
+
+  const updateStatus = (id, newStatus) => {
+    const updated = problems.map(p => 
+      p.id === id ? { ...p, status: newStatus } : p
+    );
+    saveProblems(updated);
+  };
+
+  const extractSlug = (text) => {
+    // Extract slug from URL if it's a URL
+    if (text.includes('leetcode.com/problems/')) {
+      const match = text.match(/problems\/([^/]+)/);
+      return match ? match[1] : text;
+    }
+    // Convert text to slug
+    return text.toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-');
   };
 
   const removeProblem = (id) => {
@@ -119,48 +141,84 @@ function ProblemQueue() {
         <div className="text-center py-4 text-text-muted">
           <span className="text-2xl mb-1 block">📋</span>
           <p className="text-[10px]">No problems saved yet</p>
-          <p className="text-[9px] mt-0.5">Click "+ Add" to save problems</p>
+          <p className="text-[9px] mt-0.5">Visit LeetCode problems and click "Add to Queue"</p>
         </div>
       ) : (
         <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-          {problems.map((problem) => (
-            <div
-              key={problem.id}
-              className="flex items-center gap-2 p-2 bg-background/50 rounded-lg border border-surfaceHover hover:border-primary/40 transition-all group"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-semibold text-text-main truncate group-hover:text-primary transition-colors">
-                  {problem.title}
+          {problems.map((problem) => {
+            const difficultyColors = {
+              Easy: 'text-leetcode-easy',
+              Medium: 'text-leetcode-medium',
+              Hard: 'text-leetcode-hard'
+            };
+            const statusIcons = {
+              pending: '⏳',
+              'in-progress': '🚀',
+              completed: '✅'
+            };
+            
+            return (
+              <div
+                key={problem.id || problem.slug}
+                className="flex items-center gap-2 p-2 bg-background/50 rounded-lg border border-surfaceHover hover:border-primary/40 transition-all group"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[10px]">{statusIcons[problem.status] || '📋'}</span>
+                    <div className="text-[10px] font-semibold text-text-main truncate group-hover:text-primary transition-colors">
+                      {problem.title}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[8px] text-text-muted">
+                    <span className={`font-semibold ${difficultyColors[problem.difficulty] || 'text-text-muted'}`}>
+                      {problem.difficulty}
+                    </span>
+                    {problem.number && <span>#{problem.number}</span>}
+                    <span>•</span>
+                    <span>Added {new Date(problem.addedAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <div className="text-[8px] text-text-muted mt-0.5">
-                  Added {new Date(problem.addedAt).toLocaleDateString()}
+                <div className="flex gap-1 flex-shrink-0">
+                  {problem.status !== 'completed' && (
+                    <button
+                      onClick={() => updateStatus(problem.id || problem.slug, 
+                        problem.status === 'pending' ? 'in-progress' : 'completed')}
+                      className="px-2 py-1 text-[9px] font-semibold text-accent hover:text-accent bg-accent/10 hover:bg-accent/20 rounded transition-all"
+                      title={problem.status === 'pending' ? 'Start' : 'Complete'}
+                    >
+                      {problem.status === 'pending' ? '▶' : '✓'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openProblem(problem.url)}
+                    className="px-2 py-1 text-[9px] font-semibold text-primary hover:text-primaryHover bg-primary/10 hover:bg-primary/20 rounded transition-all whitespace-nowrap"
+                    title="Open problem"
+                  >
+                    Open
+                  </button>
+                  <button
+                    onClick={() => removeProblem(problem.id || problem.slug)}
+                    className="px-1.5 py-1 text-[9px] font-semibold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 rounded transition-all"
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  onClick={() => openProblem(problem.url)}
-                  className="px-2 py-1 text-[9px] font-semibold text-primary hover:text-primaryHover bg-primary/10 hover:bg-primary/20 rounded transition-all whitespace-nowrap"
-                  title="Solve now"
-                >
-                  Solve
-                </button>
-                <button
-                  onClick={() => removeProblem(problem.id)}
-                  className="px-1.5 py-1 text-[9px] font-semibold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 rounded transition-all"
-                  title="Remove"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {problems.length > 0 && (
         <div className="mt-2 pt-2 border-t border-surfaceHover">
-          <div className="text-[9px] text-text-muted text-center">
-            {problems.length} problem{problems.length !== 1 ? 's' : ''} in queue
+          <div className="flex justify-between items-center text-[9px] text-text-muted">
+            <span>{problems.length} problem{problems.length !== 1 ? 's' : ''} in queue</span>
+            <div className="flex gap-2">
+              <span>⏳ {problems.filter(p => p.status === 'pending').length}</span>
+              <span>🚀 {problems.filter(p => p.status === 'in-progress').length}</span>
+              <span>✅ {problems.filter(p => p.status === 'completed').length}</span>
+            </div>
           </div>
         </div>
       )}
