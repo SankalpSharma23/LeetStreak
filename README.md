@@ -189,8 +189,8 @@ This is a personal project, but feel free to fork and customize!
 
 ## 📝 License
 
-MIT
-
 ---
 
 **Built with ❤️ for the LeetCode community**
+**By Sankalp Sharma**
+**From Chitkara University**
