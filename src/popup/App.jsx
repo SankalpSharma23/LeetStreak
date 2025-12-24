@@ -394,12 +394,27 @@ function App() {
                 </div>
               )
             ) : view === 'analytics' ? (
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {myData && myData.submissionCalendar && (
-                  <ProgressChart submissionCalendar={JSON.parse(myData.submissionCalendar)} />
-                )}
-                <InsightsPanelEnhanced userData={myData} friendsData={friendsList.filter(f => f.username !== myUsername)} />
-              </div>
+              myData ? (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {myData.submissionCalendar && (
+                    <ProgressChart submissionCalendar={typeof myData.submissionCalendar === 'string' ? JSON.parse(myData.submissionCalendar) : myData.submissionCalendar} />
+                  )}
+                  <InsightsPanelEnhanced userData={myData} friendsData={friendsList.filter(f => f.username !== myUsername)} />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full p-8 text-center">
+                  <div>
+                    <div className="text-5xl mb-4 animate-pulse">📊</div>
+                    <p className="text-text-muted mb-4">Loading analytics data...</p>
+                    <button
+                      onClick={handleRefresh}
+                      className="px-4 py-2 bg-primary text-inverted rounded-full text-sm font-medium"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+              )
             ) : (
               <>
                 <AddFriend onFriendAdded={handleFriendAdded} />

@@ -20,9 +20,22 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
     }
   }, [userData]);
   
-  const successMetrics = userData ? calculateSuccessMetrics(userData.recentSubmissions) : null;
-  const topicPerformance = userData ? analyzeTopicPerformance(userData.recentSubmissions) : null;
-  const friendComparison = userData && friendsData.length > 0 ? compareWithFriends(userData, friendsData) : null;
+  // Early return if no userData
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="text-center">
+          <div className="text-5xl mb-3">📊</div>
+          <p className="text-text-muted text-sm">No data available</p>
+          <p className="text-text-muted text-xs mt-1">Add your LeetCode username to see analytics</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const successMetrics = calculateSuccessMetrics(userData.recentSubmissions || []);
+  const topicPerformance = analyzeTopicPerformance(userData.recentSubmissions || []);
+  const friendComparison = friendsData.length > 0 ? compareWithFriends(userData, friendsData) : null;
 
   const handleViewDetails = (insight, e) => {
     e.stopPropagation();
