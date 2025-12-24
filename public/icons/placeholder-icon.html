@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Temporary Icon Placeholder</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            font-family: system-ui;
+        }
+        .icon {
+            background: linear-gradient(135deg, #FFA116 0%, #FFC01E 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="icon" id="icon">🏆</div>
+    <script>
+        // Get size from URL parameter
+        const params = new URLSearchParams(window.location.search);
+        const size = params.get('size') || 128;
+        const icon = document.getElementById('icon');
+        icon.style.width = size + 'px';
+        icon.style.height = size + 'px';
+        icon.style.fontSize = (size * 0.6) + 'px';
+    </script>
+</body>
+</html>

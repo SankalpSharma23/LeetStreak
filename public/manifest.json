@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "LeetStreak",
+  "version": "1.0.0",
+  "description": "Track LeetCode streaks with friends",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://leetcode.com/graphql"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LeetStreak"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "128": "icons/icon.svg"
+  }
+}
