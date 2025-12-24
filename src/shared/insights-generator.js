@@ -216,3 +216,178 @@ function analyzePotential(stats) {
   
   return { message, icon, type, category: 'Achievement Level' };
 }
+
+/**
+ * Calculate historical progress data for charts
+ */
+export function calculateProgressData(userData, historicalData = []) {
+  if (!userData || !userData.submissionCalendar) return [];
+  
+  try {
+    const calendar = typeof userData.submissionCalendar === 'string' 
+      ? JSON.parse(userData.submissionCalendar) 
+      : userData.submissionCalendar;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Generate data for last 30 days
+    const progressData = [];
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const timestamp = Math.floor(date.getTime() / 1000).toString();
+      const count = calendar[timestamp] || 0;
+      
+      progressData.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        fullDate: date.toISOString().split('T')[0],
+        submissions: count,
+        timestamp: parseInt(timestamp)
+      });
+    }
+    
+    return progressData;
+  } catch (error) {
+    console.error('Error calculating progress data:', error);
+    return [];
+  }
+}
+
+/**
+ * Analyze topic/category performance from recent submissions
+ */
+export function analyzeTopicPerformance(recentSubmissions = []) {
+  if (!recentSubmissions || recentSubmissions.length === 0) {
+    return { topics: [], totalAttempts: 0 };
+  }
+  
+  // Group by problem title (simplified topic extraction)
+  const topicMap = new Map();
+  
+  recentSubmissions.forEach(sub => {
+    const title = sub.title || 'Unknown';
+    const statusDisplay = sub.statusDisplay || '';
+    
+    if (!topicMap.has(title)) {
+      topicMap.set(title, {
+        title,
+        attempts: 0,
+        accepted: 0,
+        difficulty: getDifficultyFromTitle(title)
+      });
+    }
+    
+    const topic = topicMap.get(title);
+    topic.attempts++;
+    if (statusDisplay === 'Accepted') {
+      topic.accepted++;
+    }
+  });
+  
+  const topics = Array.from(topicMap.values())
+    .map(topic => ({
+      ...topic,
+      successRate: topic.attempts > 0 ? (topic.accepted / topic.attempts * 100).toFixed(1) : '0'
+    }))
+    .sort((a, b) => b.attempts - a.attempts)
+    .slice(0, 10); // Top 10 most attempted
+  
+  return {
+    topics,
+    totalAttempts: recentSubmissions.length
+  };
+}
+
+/**
+ * Calculate success rate metrics
+ */
+export function calculateSuccessMetrics(recentSubmissions = []) {
+  if (!recentSubmissions || recentSubmissions.length === 0) {
+    return {
+      totalAttempts: 0,
+      accepted: 0,
+      successRate: 0,
+      byDifficulty: { easy: { accepted: 0, total: 0 }, medium: { accepted: 0, total: 0 }, hard: { accepted: 0, total: 0 } }
+    };
+  }
+  
+  const metrics = {
+    totalAttempts: recentSubmissions.length,
+    accepted: 0,
+    byDifficulty: {
+      easy: { accepted: 0, total: 0 },
+      medium: { accepted: 0, total: 0 },
+      hard: { accepted: 0, total: 0 }
+    }
+  };
+  
+  recentSubmissions.forEach(sub => {
+    const isAccepted = sub.statusDisplay === 'Accepted';
+    if (isAccepted) metrics.accepted++;
+    
+    // Simplified difficulty detection
+    const difficulty = getDifficultyFromTitle(sub.title || '').toLowerCase();
+    if (metrics.byDifficulty[difficulty]) {
+      metrics.byDifficulty[difficulty].total++;
+      if (isAccepted) metrics.byDifficulty[difficulty].accepted++;
+    }
+  });
+  
+  metrics.successRate = metrics.totalAttempts > 0 
+    ? ((metrics.accepted / metrics.totalAttempts) * 100).toFixed(1) 
+    : 0;
+  
+  return metrics;
+}
+
+/**
+ * Compare user stats with friends average
+ */
+export function compareWithFriends(userData, friendsData = []) {
+  if (!userData || friendsData.length === 0) {
+    return null;
+  }
+  
+  const userStats = userData.stats || { total: 0, easy: 0, medium: 0, hard: 0 };
+  
+  // Calculate friends average
+  const totals = friendsData.reduce((acc, friend) => {
+    const stats = friend.stats || { total: 0, easy: 0, medium: 0, hard: 0 };
+    return {
+      total: acc.total + stats.total,
+      easy: acc.easy + stats.easy,
+      medium: acc.medium + stats.medium,
+      hard: acc.hard + stats.hard,
+      streak: acc.streak + (friend.streak || 0)
+    };
+  }, { total: 0, easy: 0, medium: 0, hard: 0, streak: 0 });
+  
+  const count = friendsData.length;
+  const avgStats = {
+    total: Math.round(totals.total / count),
+    easy: Math.round(totals.easy / count),
+    medium: Math.round(totals.medium / count),
+    hard: Math.round(totals.hard / count),
+    streak: Math.round(totals.streak / count)
+  };
+  
+  return {
+    user: userStats,
+    average: avgStats,
+    comparison: {
+      total: userStats.total - avgStats.total,
+      easy: userStats.easy - avgStats.easy,
+      medium: userStats.medium - avgStats.medium,
+      hard: userStats.hard - avgStats.hard,
+      streak: (userData.streak || 0) - avgStats.streak
+    }
+  };
+}
+
+// Helper function to extract difficulty (simplified)
+function getDifficultyFromTitle(title) {
+  // This is a simplified version - in production you'd want to fetch actual difficulty
+  // For now, we'll return 'medium' as default
+  return 'Medium';
+}

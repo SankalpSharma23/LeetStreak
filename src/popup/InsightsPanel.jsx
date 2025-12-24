@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
-import { generateInsights } from '../shared/insights-generator';
+import { 
+  generateInsights, 
+  calculateSuccessMetrics, 
+  analyzeTopicPerformance,
+  compareWithFriends 
+} from '../shared/insights-generator';
 
-export default function InsightsPanel({ userData }) {
+export default function InsightsPanel({ userData, friendsData = [] }) {
   const [insights, setInsights] = useState([]);
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailInsight, setDetailInsight] = useState(null);
+  const [activeTab, setActiveTab] = useState('insights'); // 'insights', 'analytics', 'comparison'
 
   useEffect(() => {
     if (userData) {
@@ -13,6 +19,10 @@ export default function InsightsPanel({ userData }) {
       setInsights(generatedInsights);
     }
   }, [userData]);
+  
+  const successMetrics = userData ? calculateSuccessMetrics(userData.recentSubmissions) : null;
+  const topicPerformance = userData ? analyzeTopicPerformance(userData.recentSubmissions) : null;
+  const friendComparison = userData && friendsData.length > 0 ? compareWithFriends(userData, friendsData) : null;
 
   const handleViewDetails = (insight, e) => {
     e.stopPropagation();

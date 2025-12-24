@@ -5,6 +5,8 @@ import LoadingSkeleton from './LoadingSkeleton';
 import StreakView from './StreakView';
 import NotificationSettings from './NotificationSettings';
 import NotificationToast from './NotificationToast';
+import InsightsPanelEnhanced from './InsightsPanelEnhanced';
+import ProgressChart from './ProgressChart';
 import { getTimeSinceUpdate } from '../shared/streak-calculator';
 
 function App() {
@@ -13,7 +15,7 @@ function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [error, setError] = useState(null);
-  const [view, setView] = useState('streak'); // 'streak' or 'leaderboard'
+  const [view, setView] = useState('streak'); // 'streak', 'leaderboard', or 'analytics'
   const [myUsername, setMyUsername] = useState(null);
   const [setupMode, setSetupMode] = useState(false);
   const [setupUsername, setSetupUsername] = useState('');
@@ -301,18 +303,29 @@ function App() {
             <div className="flex flex-1 px-4">
               <button
                 onClick={() => setView('streak')}
-                className={`flex-1 py-4 text-sm font-semibold transition-all duration-300 relative ${
+                className={`flex-1 py-4 text-xs font-semibold transition-all duration-300 relative ${
                   view === 'streak' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                🔥 My Progress
+                🔥 Progress
                 {view === 'streak' && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(245,158,11,0.5)]"></div>
                 )}
               </button>
               <button
+                onClick={() => setView('analytics')}
+                className={`flex-1 py-4 text-xs font-semibold transition-all duration-300 relative ${
+                  view === 'analytics' ? 'text-primary' : 'text-text-muted hover:text-text-main'
+                }`}
+              >
+                📊 Analytics
+                {view === 'analytics' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(245,158,11,0.5)]"></div>
+                )}
+              </button>
+              <button
                 onClick={() => setView('leaderboard')}
-                className={`flex-1 py-4 text-sm font-semibold transition-all duration-300 relative ${
+                className={`flex-1 py-4 text-xs font-semibold transition-all duration-300 relative ${
                   view === 'leaderboard' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}
               >
@@ -380,6 +393,13 @@ function App() {
                   </div>
                 </div>
               )
+            ) : view === 'analytics' ? (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {myData && myData.submissionCalendar && (
+                  <ProgressChart submissionCalendar={JSON.parse(myData.submissionCalendar)} />
+                )}
+                <InsightsPanelEnhanced userData={myData} friendsData={friendsList.filter(f => f.username !== myUsername)} />
+              </div>
             ) : (
               <>
                 <AddFriend onFriendAdded={handleFriendAdded} />
