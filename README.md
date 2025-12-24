@@ -192,5 +192,7 @@ This is a personal project, but feel free to fork and customize!
 ---
 
 **Built with ❤️ for the LeetCode community**
-**By Sankalp Sharma**
+
+**<u>By Sankalp Sharma</u>**
+
 **From Chitkara University**
