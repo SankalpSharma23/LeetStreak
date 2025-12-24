@@ -91,43 +91,103 @@
   }
   
   // Create button element
-  function createButton(text, icon, onClick) {
+  function createButton(text, icon, onClick, isFloating = false) {
     const button = document.createElement('button');
-    button.className = 'leetstreak-btn';
+    button.className = isFloating ? 'leetstreak-floating-btn' : 'leetstreak-btn';
     button.innerHTML = `
       <span class="icon">${icon}</span>
       <span class="text">${text}</span>
     `;
-    button.style.cssText = `
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      margin-left: 8px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    `;
+    
+    if (isFloating) {
+      button.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `;
+    } else {
+      button.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        margin-left: 8px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `;
+    }
     
     button.addEventListener('mouseenter', () => {
       button.style.transform = 'translateY(-2px)';
-      button.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+      button.style.boxShadow = isFloating 
+        ? '0 6px 25px rgba(102, 126, 234, 0.5)'
+        : '0 4px 12px rgba(102, 126, 234, 0.4)';
     });
     
     button.addEventListener('mouseleave', () => {
       button.style.transform = 'translateY(0)';
-      button.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+      button.style.boxShadow = isFloating
+        ? '0 4px 20px rgba(102, 126, 234, 0.4)'
+        : '0 2px 8px rgba(102, 126, 234, 0.3)';
     });
     
     button.addEventListener('click', onClick);
     
     return button;
+  }
+  
+  // Create floating action button as fallback
+  function createFloatingButton() {
+    // Remove if already exists
+    const existing = document.getElementById('leetstreak-floating-menu');
+    if (existing) return;
+    
+    const container = document.createElement('div');
+    container.id = 'leetstreak-floating-menu';
+    container.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10000;
+    `;
+    
+    const queueBtn = createButton('Queue', '📋', handleAddToQueue, true);
+    const screenshotBtn = createButton('Screenshot', '📸', handleCodeScreenshot, true);
+    
+    queueBtn.style.bottom = '80px';
+    screenshotBtn.style.bottom = '20px';
+    
+    container.appendChild(queueBtn);
+    container.appendChild(screenshotBtn);
+    
+    document.body.appendChild(container);
+    console.log('LeetStreak: Floating buttons added as fallback');
   }
   
   // Handle Add to Queue
@@ -484,26 +544,67 @@
   function injectButtons() {
     if (buttonsInjected) return;
     
-    // Find the target location (near console/submit buttons area)
-    const targetSelectors = [
-      'div[class*="flex items-center"] button[class*="rounded"]', // Near submit button
-      'div[class*="action"] button',
-      'button[data-e2e-locator="console-submit-button"]'
-    ];
+    console.log('LeetStreak: Attempting to inject buttons...');
     
+    // Check if already exists
+    if (document.getElementById('leetstreak-buttons')) {
+      console.log('LeetStreak: Buttons already exist');
+      buttonsInjected = true;
+      return;
+    }
+    
+    // Try multiple strategies to find injection point
     let targetElement = null;
-    for (const selector of targetSelectors) {
-      const elements = document.querySelectorAll(selector);
-      if (elements.length > 0) {
-        targetElement = elements[0].parentElement;
-        break;
+    
+    // Strategy 1: Find by testid (most reliable)
+    const testidButton = document.querySelector('[data-e2e-locator*="console"]');
+    if (testidButton) {
+      targetElement = testidButton.parentElement?.parentElement;
+      console.log('LeetStreak: Found via testid');
+    }
+    
+    // Strategy 2: Find submit/run buttons container
+    if (!targetElement) {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const submitButton = buttons.find(btn => 
+        btn.textContent.includes('Submit') || 
+        btn.textContent.includes('Run') ||
+        btn.textContent.includes('Test')
+      );
+      if (submitButton) {
+        targetElement = submitButton.parentElement;
+        console.log('LeetStreak: Found via submit button');
+      }
+    }
+    
+    // Strategy 3: Find by looking for action buttons area
+    if (!targetElement) {
+      const actionDivs = document.querySelectorAll('div[class*="flex"]');
+      for (const div of actionDivs) {
+        const hasButtons = div.querySelectorAll('button').length >= 2;
+        if (hasButtons && div.offsetHeight > 30) {
+          targetElement = div;
+          console.log('LeetStreak: Found via flex container');
+          break;
+        }
+      }
+    }
+    
+    // Strategy 4: Find the header/toolbar area
+    if (!targetElement) {
+      const headers = document.querySelectorAll('[class*="header"], [class*="toolbar"]');
+      if (headers.length > 0) {
+        targetElement = headers[0];
+        console.log('LeetStreak: Found via header');
       }
     }
     
     if (!targetElement) {
-      console.log('LeetStreak: Could not find injection point');
+      console.log('LeetStreak: Could not find injection point. Will retry...');
       return;
     }
+    
+    console.log('LeetStreak: Found injection point:', targetElement);
     
     // Create container for our buttons
     const buttonContainer = document.createElement('div');
@@ -512,6 +613,8 @@
       display: inline-flex;
       gap: 8px;
       align-items: center;
+      margin-left: 12px;
+      z-index: 100;
     `;
     
     // Create buttons
@@ -525,7 +628,7 @@
     targetElement.appendChild(buttonContainer);
     
     buttonsInjected = true;
-    console.log('LeetStreak: Buttons injected successfully');
+    console.log('LeetStreak: Buttons injected successfully!');
   }
   
   // Initialize
@@ -535,19 +638,36 @@
       return;
     }
     
-    // Wait for page to load
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(injectButtons, 2000);
-      });
-    } else {
-      setTimeout(injectButtons, 2000);
-    }
+    console.log('LeetStreak: On problem page, initializing...');
+    
+    // Always add floating buttons as immediate fallback
+    setTimeout(() => {
+      if (!buttonsInjected) {
+        console.log('LeetStreak: Adding floating buttons as fallback');
+        createFloatingButton();
+      }
+    }, 3000);
+    
+    // Try multiple times with increasing delays for inline injection
+    const delays = [1000, 2000, 3000, 5000];
+    delays.forEach(delay => {
+      setTimeout(() => {
+        if (!buttonsInjected) {
+          console.log(`LeetStreak: Trying injection after ${delay}ms...`);
+          injectButtons();
+        }
+      }, delay);
+    });
     
     // Use MutationObserver to handle dynamic content
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((mutations) => {
       if (isProblemPage() && !buttonsInjected) {
-        injectButtons();
+        // Check if we have enough DOM content before trying
+        const hasContent = document.querySelectorAll('button').length > 5;
+        if (hasContent) {
+          console.log('LeetStreak: DOM changed, trying injection...');
+          injectButtons();
+        }
       }
     });
     
@@ -555,6 +675,20 @@
       childList: true,
       subtree: true
     });
+    
+    // Also listen for URL changes (SPA navigation)
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+      const url = location.href;
+      if (url !== lastUrl) {
+        lastUrl = url;
+        buttonsInjected = false;
+        if (isProblemPage()) {
+          console.log('LeetStreak: URL changed, re-injecting...');
+          setTimeout(() => injectButtons(), 2000);
+        }
+      }
+    }).observe(document, { subtree: true, childList: true });
   }
   
   // Load html2canvas library dynamically
