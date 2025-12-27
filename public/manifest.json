@@ -11,7 +11,8 @@
   ],
   "host_permissions": [
     "https://leetcode.com/*",
-    "https://leetcode.com/graphql"
+    "https://leetcode.com/graphql",
+    "https://api.github.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js",

@@ -137,7 +137,7 @@ function NotificationSettings({ isOpen, onClose }) {
               {notificationState?.lastNotified && Object.keys(notificationState.lastNotified).length > 0 && (
                 <div className="border-t border-zinc-700 pt-4 mt-4">
                   <h3 className="text-sm font-medium text-zinc-300 mb-2">Recent Notifications</h3>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                  <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-hide">
                     {Object.entries(notificationState.lastNotified).map(([username, date]) => (
                       <div key={username} className="flex justify-between text-xs">
                         <span className="text-zinc-400">{username}</span>

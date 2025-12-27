@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import MilestoneCelebration from './MilestoneCelebration';
 import GoalsPanel from './GoalsPanel';
 import DailyQuestion from './DailyQuestion';
-import ProgressChart from './ProgressChart';
 import ProblemQueue from './ProblemQueue';
 import { exportToCSV, exportToPDF } from '../shared/export-manager';
 
@@ -223,7 +222,7 @@ function StreakView({ friends, currentStreak, onRefresh, refreshing }) {
   };
 
   return (
-    <div className="h-full overflow-y-auto pb-6 bg-background">
+    <div className="h-full overflow-y-auto pb-6 bg-background scrollbar-hide">
       {/* Milestone Celebration */}
       {showMilestone && (
         <MilestoneCelebration 
@@ -435,10 +434,6 @@ function StreakView({ friends, currentStreak, onRefresh, refreshing }) {
         <GoalsPanel userData={userData} />
       </div>
 
-      {/* Progress Chart */}
-      <div className="mx-6 mb-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-        <ProgressChart submissionCalendar={submissionCalendar} />
-      </div>
 
       {/* Badge Achievement */}
       {topFriend && topFriend.stats.streak >= 7 && (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Flame, Sparkles, BarChart2 } from 'lucide-react';
 import { calculateMutualStreak } from '../shared/mutual-streak-calculator';
 
 // Helper function to check if solved today
@@ -254,7 +255,7 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
       {/* Active Badge */}
       {friend.submissionCalendar && isSolvingToday(friend.submissionCalendar) && (
         <div className="absolute -top-1 -right-1 z-10 bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse pointer-events-none">
-          🔥 ACTIVE
+          <span className="flex items-center gap-1"><Flame className="w-3 h-3" /> ACTIVE</span>
         </div>
       )}
       
@@ -275,7 +276,7 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
             />
             {rank <= 3 && (
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full border-2 border-surface text-inverted text-xs flex items-center justify-center shadow-sm">
-                ✨
+                <Sparkles className="w-3 h-3" />
               </div>
             )}
           </div>
@@ -324,7 +325,7 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
 
           {/* Streak Badge */}
           <div className="flex items-center gap-1 bg-gradient-to-r from-primary to-primaryHover text-inverted px-3 py-2 rounded-full shadow-lg shadow-primary/20">
-            <span className="text-lg">🔥</span>
+            <Flame className="w-5 h-5 text-orange-500" />
             <span className="text-base font-bold">{mutualStreak}</span>
           </div>
         </div>
@@ -369,7 +370,10 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
               className="px-2 py-2 bg-primary/10 hover:bg-primary/20 rounded-xl border border-primary/30 cursor-pointer transition-colors"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-primary">📊 Submissions</span>
+                <span className="text-sm font-semibold text-primary flex items-center gap-1.5">
+                  <BarChart2 className="w-4 h-4" />
+                  Submissions
+                </span>
                 <svg 
                   className={`w-5 h-5 text-primary transition-transform duration-200 ${showSubmissionsSection ? 'rotate-180' : ''}`}
                   fill="none" 
@@ -416,7 +420,7 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
                       </svg>
                     </div>
                     {allSubmissionsExpanded && (
-                      <div className="space-y-2 max-h-32 overflow-y-auto mt-2 animate-slide-up">
+                      <div className="space-y-2 max-h-32 overflow-y-auto mt-2 animate-slide-up scrollbar-hide">
                         {recentSubmissions.slice(0, 5).map((sub, idx) => (
                           <a
                             key={idx}

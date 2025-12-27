@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { UserPlus, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 function AddFriend({ onFriendAdded }) {
   const [username, setUsername] = useState('');
@@ -27,9 +28,10 @@ function AddFriend({ onFriendAdded }) {
       if (response.success) {
         setSuccess(`${username} added successfully!`);
         setUsername('');
+        // Immediately trigger refresh
+        onFriendAdded();
         setTimeout(() => {
           setSuccess('');
-          onFriendAdded();
         }, 1500);
       } else {
         setError(response.error || 'Failed to add friend');
@@ -61,20 +63,20 @@ function AddFriend({ onFriendAdded }) {
           disabled={loading}
           className="px-6 py-3 bg-primary hover:bg-primaryHover text-inverted font-bold rounded-3xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-primary/20 active:scale-95 text-sm"
         >
-          {loading ? '⏳' : '➕'}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
         </button>
       </form>
       
       {error && (
         <div className="mt-2 p-3 bg-red-500/10 rounded-2xl flex items-start gap-2 text-sm shadow-md border border-red-500/20 animate-shake">
-          <span className="text-red-400">⚠️</span>
+          <AlertTriangle className="w-4 h-4 text-red-400" />
           <p className="text-red-400 flex-1">{error}</p>
         </div>
       )}
       
       {success && (
         <div className="mt-2 p-3 bg-secondary/10 rounded-2xl flex items-center gap-2 text-sm shadow-md border border-secondary/20 animate-fade-in">
-          <span className="text-secondary">✅</span>
+          <CheckCircle2 className="w-4 h-4 text-secondary" />
           <p className="text-secondary font-medium">{success}</p>
         </div>
       )}

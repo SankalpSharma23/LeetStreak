@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Trophy, BarChart2 } from 'lucide-react';
 import FriendManager from './FriendManager';
+import Footer from '../popup/Footer';
 
 function App() {
   const [friends, setFriends] = useState({});
@@ -46,11 +48,14 @@ function App() {
   const friendsList = Object.values(friends);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header */}
       <div className="bg-gradient-to-r from-leetcode-medium to-leetcode-easy text-white shadow-lg">
         <div className="container mx-auto px-8 py-6">
-          <h1 className="text-3xl font-bold">🏆 LeetFriends Settings</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Trophy className="w-8 h-8" />
+            LeetFriends Settings
+          </h1>
           <p className="text-sm opacity-90 mt-2">
             Manage your friend list and extension preferences
           </p>
@@ -73,7 +78,10 @@ function App() {
           <div className="space-y-6">
             {/* Stats Card */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-bold text-lg mb-4">📊 Statistics</h3>
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <BarChart2 className="w-5 h-5" />
+                Statistics
+              </h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Friends:</span>
@@ -132,6 +140,9 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

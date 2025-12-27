@@ -1,4 +1,34 @@
-const S = "https://leetcode.com/graphql", v = `
+const w = "https://leetcode.com/graphql";
+function S(e) {
+  return new Promise((t) => setTimeout(t, e));
+}
+async function M(e, t, r = 3) {
+  let s;
+  for (let o = 0; o < r; o++)
+    try {
+      if (typeof navigator < "u" && !navigator.onLine)
+        throw new Error("No internet connection. Please check your network.");
+      const n = new AbortController(), c = setTimeout(() => n.abort(), 1e4), i = await fetch(e, {
+        ...t,
+        signal: n.signal
+      });
+      if (clearTimeout(c), i.status === 429) {
+        const a = parseInt(i.headers.get("Retry-After")) || Math.pow(2, o);
+        console.log(`[API] Rate limited. Retrying after ${a}s`), await S(a * 1e3);
+        continue;
+      }
+      return i;
+    } catch (n) {
+      if (s = n, n.name === "AbortError" && (console.error("[API] Request timeout (10000ms)"), s = new Error(`Request timed out after ${1e4 / 1e3} seconds`)), n.message.includes("No internet connection"))
+        throw n;
+      if (o < r - 1) {
+        const c = Math.pow(2, o) * 1e3;
+        console.log(`[API] Retry ${o + 1}/${r} in ${c}ms`), await S(c);
+      }
+    }
+  throw s || new Error("Network request failed after multiple retries");
+}
+const P = `
   query getUserProfile($username: String!) {
     matchedUser(username: $username) {
       username
@@ -21,7 +51,7 @@ const S = "https://leetcode.com/graphql", v = `
       globalRanking
     }
   }
-`, O = `
+`, F = `
   query getUserBadges($username: String!) {
     matchedUser(username: $username) {
       badges {
@@ -31,7 +61,7 @@ const S = "https://leetcode.com/graphql", v = `
       }
     }
   }
-`, $ = `
+`, R = `
   query getRecentSubmissions($username: String!) {
     recentSubmissionList(username: $username, limit: 15) {
       title
@@ -42,196 +72,272 @@ const S = "https://leetcode.com/graphql", v = `
     }
   }
 `;
-async function T(t) {
+async function E(e) {
   try {
-    console.log(`[API] Fetching data for user: ${t}`);
-    const e = await fetch(S, {
+    console.log(`[API] Fetching data for user: ${e}`);
+    const t = await M(w, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        query: v,
-        variables: { username: t }
+        query: P,
+        variables: { username: e }
       })
     });
-    if (console.log(`[API] Profile response status: ${e.status}`), !e.ok) {
-      const n = await e.text();
-      throw console.error("[API] Profile request failed:", e.status, n), new Error(`API request failed: ${e.status}`);
+    if (console.log(`[API] Profile response status: ${t.status}`), !t.ok) {
+      const i = await t.text();
+      throw console.error("[API] Profile request failed:", t.status, i), new Error(`API request failed: ${t.status}`);
     }
-    const r = await e.json();
+    const r = await t.json();
     if (console.log("[API] Profile data received:", r), r.errors)
       throw console.error("[API] GraphQL errors:", r.errors), new Error(r.errors[0]?.message || "GraphQL error");
     if (!r.data?.matchedUser)
       throw console.error("[API] No matched user in response"), new Error("User not found or profile is private");
     const s = r.data.matchedUser, o = s.submissionCalendar ? JSON.parse(s.submissionCalendar) : {};
-    let a = [];
+    let n = [];
     try {
-      const n = await fetch(S, {
+      const i = await fetch(w, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          query: O,
-          variables: { username: t }
+          query: F,
+          variables: { username: e }
         })
       });
-      n.ok && (a = (await n.json()).data?.matchedUser?.badges || []);
-    } catch (n) {
-      console.warn("[API] Failed to fetch badges:", n);
+      i.ok && (n = (await i.json()).data?.matchedUser?.badges || []);
+    } catch (i) {
+      console.warn("[API] Failed to fetch badges:", i);
     }
-    let i = [];
+    let c = [];
     try {
-      const n = await fetch(S, {
+      const i = await fetch(w, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          query: $,
-          variables: { username: t }
+          query: R,
+          variables: { username: e }
         })
       });
-      n.ok && (i = (await n.json()).data?.recentSubmissionList || []);
-    } catch (n) {
-      console.warn("[API] Failed to fetch recent submissions:", n);
+      i.ok && (c = (await i.json()).data?.recentSubmissionList || []);
+    } catch (i) {
+      console.warn("[API] Failed to fetch recent submissions:", i);
     }
-    return console.log(`[API] Successfully fetched data for ${t}`), {
+    return console.log(`[API] Successfully fetched data for ${e}`), {
       profile: {
         ...s,
-        badges: a,
-        recentSubmissions: i
+        badges: n,
+        recentSubmissions: c
       },
       contestRanking: r.data.userContestRanking,
       submissionCalendar: o
     };
-  } catch (e) {
-    throw console.error("Error fetching LeetCode data:", e), e;
+  } catch (t) {
+    throw console.error("Error fetching LeetCode data:", t), t;
   }
 }
-const m = "leetfriends_data";
-async function u() {
+class j {
+  constructor() {
+    this.queue = [], this.processing = !1;
+  }
+  /**
+   * Add operation to queue
+   * @param {Function} operation - Async operation to execute
+   * @returns {Promise} Result of the operation
+   */
+  async enqueue(t) {
+    return new Promise((r, s) => {
+      this.queue.push({ operation: t, resolve: r, reject: s }), this.processQueue();
+    });
+  }
+  /**
+   * Process queued operations sequentially
+   */
+  async processQueue() {
+    if (!(this.processing || this.queue.length === 0)) {
+      for (this.processing = !0; this.queue.length > 0; ) {
+        const { operation: t, resolve: r, reject: s } = this.queue.shift();
+        try {
+          const o = await t();
+          r(o);
+        } catch (o) {
+          s(o);
+        }
+      }
+      this.processing = !1;
+    }
+  }
+}
+const $ = new j(), m = "leetfriends_data", L = 5 * 1024 * 1024, q = 0.8;
+async function G() {
+  try {
+    const e = await chrome.storage.local.get(null);
+    return new Blob([JSON.stringify(e)]).size;
+  } catch (e) {
+    return console.error("Error calculating storage usage:", e), 0;
+  }
+}
+async function T() {
+  console.log("[Storage] Running cleanup of old submissions...");
+  const e = await d(), t = Math.floor(Date.now() / 1e3) - 365 * 24 * 60 * 60;
+  let r = 0;
+  return Object.entries(e).forEach(([s, o]) => {
+    o.submissionCalendar && Object.keys(o.submissionCalendar).forEach((n) => {
+      parseInt(n) < t && (delete o.submissionCalendar[n], r++);
+    });
+  }), r > 0 && (await chrome.storage.local.set({ [m]: { friends: e } }), console.log(`[Storage] Cleaned ${r} old submission entries`)), r;
+}
+async function _() {
+  const e = await G(), t = e / L * 100;
+  return {
+    bytes: e,
+    megabytes: (e / 1024 / 1024).toFixed(2),
+    percent: t.toFixed(1),
+    nearLimit: t > q * 100,
+    atLimit: t > 95
+  };
+}
+async function d() {
   try {
     return (await chrome.storage.local.get(m))[m]?.friends || {};
-  } catch (t) {
-    return console.error("Error getting friends from storage:", t), {};
-  }
-}
-async function b(t) {
-  return (await u())[t] || null;
-}
-async function U(t, e) {
-  try {
-    const r = await u(), s = !r[t];
-    return r[t] = {
-      ...e,
-      lastUpdated: Date.now(),
-      friendshipStartDate: r[t]?.friendshipStartDate || (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
-    }, await chrome.storage.local.set({
-      [m]: { friends: r }
-    }), !0;
-  } catch (r) {
-    return console.error("Error saving friend to storage:", r), !1;
-  }
-}
-async function F(t) {
-  try {
-    const e = await u();
-    return delete e[t], await chrome.storage.local.set({
-      [m]: { friends: e }
-    }), !0;
   } catch (e) {
-    return console.error("Error removing friend from storage:", e), !1;
+    return console.error("Error getting friends from storage:", e), {};
   }
 }
-async function R() {
-  const t = await u();
-  return Object.keys(t);
+async function U(e) {
+  return (await d())[e] || null;
 }
-function P(t) {
-  if (!t || typeof t != "object")
-    return 0;
-  const e = /* @__PURE__ */ new Set();
-  if (Object.entries(t).forEach(([c, d]) => {
-    if (d > 0) {
-      const D = new Date(parseInt(c) * 1e3).toISOString().split("T")[0];
-      e.add(D);
+async function k(e, t) {
+  return $.enqueue(async () => {
+    try {
+      const r = await _();
+      if (r.atLimit && (console.warn("[Storage] Quota at limit, attempting cleanup..."), await T(), (await _()).atLimit))
+        throw new Error("Storage quota exceeded. Please remove some friends or clear old data.");
+      r.nearLimit && console.warn(`[Storage] Usage: ${r.megabytes}MB (${r.percent}%)`);
+      const s = await d(), o = !s[e];
+      return s[e] = {
+        ...t,
+        lastUpdated: Date.now(),
+        friendshipStartDate: s[e]?.friendshipStartDate || (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
+      }, await chrome.storage.local.set({
+        [m]: { friends: s }
+      }), { success: !0, storageHealth: r };
+    } catch (r) {
+      if (console.error("Error saving friend to storage:", r), r.message && (r.message.includes("QUOTA_EXCEEDED") || r.message.includes("quota")))
+        try {
+          await T();
+          const s = await d();
+          return s[e] = { ...t, lastUpdated: Date.now() }, await chrome.storage.local.set({ [m]: { friends: s } }), { success: !0, warning: "Storage was full but cleaned up successfully" };
+        } catch {
+          return { success: !1, error: "Storage quota exceeded. Please remove some friends." };
+        }
+      return { success: !1, error: r.message };
     }
-  }), e.size === 0)
+  });
+}
+async function H(e) {
+  return $.enqueue(async () => {
+    try {
+      const t = await d();
+      return delete t[e], await chrome.storage.local.set({
+        [m]: { friends: t }
+      }), !0;
+    } catch (t) {
+      return console.error("Error removing friend from storage:", t), !1;
+    }
+  });
+}
+async function x() {
+  const e = await d();
+  return Object.keys(e);
+}
+function Y(e) {
+  if (!e || typeof e != "string")
+    throw new Error("Username is required");
+  if (e = e.trim(), e.length < 1 || e.length > 50)
+    throw new Error("Username must be 1-50 characters");
+  if (!/^[a-zA-Z0-9_-]+$/.test(e))
+    throw new Error("Username contains invalid characters. Only letters, numbers, underscore, and hyphen are allowed.");
+  return e.toLowerCase();
+}
+function Q(e) {
+  if (!e || typeof e != "object")
     return 0;
-  const r = Array.from(e).sort((c, d) => d.localeCompare(c)), s = /* @__PURE__ */ new Date(), o = s.toISOString().split("T")[0], a = r[0], i = new Date(s);
-  i.setUTCDate(i.getUTCDate() - 1);
-  const n = i.toISOString().split("T")[0];
-  if (a !== o && a !== n)
+  const t = /* @__PURE__ */ new Set();
+  if (Object.entries(e).forEach(([u, f]) => {
+    if (f > 0) {
+      const h = new Date(parseInt(u) * 1e3).toISOString().split("T")[0];
+      t.add(h);
+    }
+  }), t.size === 0)
     return 0;
-  let l = 0, g = /* @__PURE__ */ new Date(a + "T00:00:00Z");
-  for (let c = 0; c < r.length; c++) {
-    const d = g.toISOString().split("T")[0];
-    if (r[c] === d)
-      l++, g.setUTCDate(g.getUTCDate() - 1);
+  const r = Array.from(t).sort((u, f) => f.localeCompare(u)), s = /* @__PURE__ */ new Date(), o = s.toISOString().split("T")[0], n = r[0], c = new Date(s);
+  c.setUTCDate(c.getUTCDate() - 1);
+  const i = c.toISOString().split("T")[0];
+  if (n !== o && n !== i)
+    return 0;
+  let a = 0, l = /* @__PURE__ */ new Date(n + "T00:00:00Z");
+  for (let u = 0; u < r.length; u++) {
+    const f = l.toISOString().split("T")[0];
+    if (r[u] === f)
+      a++, l.setUTCDate(l.getUTCDate() - 1);
     else
       break;
   }
-  return l;
+  return a;
 }
-function M(t) {
-  const e = { easy: 0, medium: 0, hard: 0, total: 0 };
-  return Array.isArray(t) && t.forEach((r) => {
+function z(e) {
+  const t = { easy: 0, medium: 0, hard: 0, total: 0 };
+  return Array.isArray(e) && e.forEach((r) => {
     const s = r.count || 0;
     switch (r.difficulty) {
       case "Easy":
-        e.easy = s;
+        t.easy = s;
         break;
       case "Medium":
-        e.medium = s;
+        t.medium = s;
         break;
       case "Hard":
-        e.hard = s;
+        t.hard = s;
         break;
       case "All":
-        e.total = s;
+        t.total = s;
         break;
     }
-  }), e;
+  }), t;
 }
-function L(t) {
-  if (!t) return !0;
-  const e = 900 * 1e3;
-  return Date.now() - t > e;
+function B(e) {
+  if (!e) return !0;
+  const t = 900 * 1e3;
+  return Date.now() - e > t;
 }
-const h = "leetfriends_notifications";
-async function f() {
+const b = "leetfriends_notifications";
+async function p() {
   try {
-    return (await chrome.storage.local.get(h))[h] || {
+    return (await chrome.storage.local.get(b))[b] || {
       mutedUntilUTC: null,
       lastNotified: {}
     };
-  } catch (t) {
-    return console.error("Error getting notification state:", t), { mutedUntilUTC: null, lastNotified: {} };
+  } catch (e) {
+    return console.error("Error getting notification state:", e), { mutedUntilUTC: null, lastNotified: {} };
   }
 }
-async function j(t) {
-  const e = await f();
-  e.mutedUntilUTC = t, await chrome.storage.local.set({ [h]: e });
+async function J(e) {
+  const t = await p();
+  t.mutedUntilUTC = e, await chrome.storage.local.set({ [b]: t });
 }
 async function y() {
-  const t = await f();
-  if (!t.mutedUntilUTC) return !1;
-  const e = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  return t.mutedUntilUTC >= e;
+  const e = await p();
+  if (!e.mutedUntilUTC) return !1;
+  const t = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  return e.mutedUntilUTC >= t;
 }
-async function k(t) {
-  if (await y()) return !1;
-  const e = await f(), r = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  return e.lastNotified[t] !== r;
-}
-async function N(t) {
-  const e = await f(), r = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  e.lastNotified[t] = r, await chrome.storage.local.set({ [h]: e });
-}
-async function C(t) {
-  if (t.length === 0) {
+async function A(e) {
+  if (e.length === 0) {
     console.log("No events to notify");
     return;
   }
@@ -239,232 +345,273 @@ async function C(t) {
     console.log("Notifications are muted");
     return;
   }
-  console.log("Storing", t.length, "notification(s) for popup display");
+  console.log("Processing", e.length, "notification(s)");
   try {
-    const r = (await chrome.storage.local.get("unread_notifications")).unread_notifications || [], s = Date.now(), o = t.map((c, d) => ({
-      ...c,
-      id: `${s}-${d}`,
+    const r = (await chrome.storage.local.get("unread_notifications")).unread_notifications || [], s = Date.now(), o = e.map((a, l) => ({
+      ...a,
+      id: `${s}-${l}`,
       timestamp: s
-    })), a = [...r, ...o], i = s - 1440 * 60 * 1e3, n = a.filter((c) => c.timestamp > i).slice(-10);
-    await chrome.storage.local.set({ unread_notifications: n }), console.log("✅ Notifications stored successfully for popup display");
-    const l = t.length === 1 ? t[0].message : `${t.length} friends updated their streaks today`, g = await chrome.notifications.create({
-      type: "basic",
-      iconUrl: chrome.runtime.getURL("icons/icon128.png"),
-      title: "LeetStreak",
-      message: l,
-      priority: 2,
-      requireInteraction: !1
-    });
-    console.log("✅ System notification sent:", g);
-    for (const c of t)
-      await N(c.username);
-  } catch (e) {
-    console.error("❌ Error sending notification:", e), console.error("Notification details:", { message, eventsCount: t.length });
+    })), n = [...r, ...o], c = s - 1440 * 60 * 1e3, i = n.filter((a) => a.timestamp > c).slice(-20);
+    await chrome.storage.local.set({ unread_notifications: i }), console.log("✅ Notifications stored successfully for popup display");
+    for (const a of e)
+      (a.type === "new_submission" || a.type === "milestone") && (await chrome.notifications.create({
+        type: "basic",
+        iconUrl: chrome.runtime.getURL("icons/icon128.png"),
+        title: a.type === "new_submission" ? "🎯 LeetStreak - New Submission!" : "🔥 LeetStreak - Milestone!",
+        message: a.message,
+        priority: 2,
+        requireInteraction: !1
+      }), console.log("✅ Browser notification sent for:", a.username));
+  } catch (t) {
+    console.error("❌ Error sending notification:", t), console.error("Notification details:", { eventsCount: e.length });
   }
 }
-const Y = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const W = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  batchNotify: C,
-  getNotificationState: f,
+  batchNotify: A,
+  getNotificationState: p,
   isNotificationMuted: y,
-  markFriendNotified: N,
-  setNotificationMuted: j,
-  shouldNotifyForFriend: k
-}, Symbol.toStringTag, { value: "Module" })), E = () => (/* @__PURE__ */ new Date()).toISOString().split("T")[0], q = () => {
-  const t = /* @__PURE__ */ new Date();
-  return t.setUTCDate(t.getUTCDate() - 1), t.toISOString().split("T")[0];
+  setNotificationMuted: J
+}, Symbol.toStringTag, { value: "Module" })), C = () => (/* @__PURE__ */ new Date()).toISOString().split("T")[0], X = () => {
+  const e = /* @__PURE__ */ new Date();
+  return e.setUTCDate(e.getUTCDate() - 1), e.toISOString().split("T")[0];
 };
-function p(t) {
-  if (!t || typeof t != "object")
+function K(e) {
+  if (!e || typeof e != "object")
     return !1;
-  const e = E();
-  for (const [r, s] of Object.entries(t))
-    if (s > 0 && new Date(parseInt(r) * 1e3).toISOString().split("T")[0] === e)
+  const t = C();
+  for (const [r, s] of Object.entries(e))
+    if (s > 0 && new Date(parseInt(r) * 1e3).toISOString().split("T")[0] === t)
       return !0;
   return !1;
 }
-function G(t, e) {
-  if (!e) return p(t.submissionCalendar);
-  const r = p(t.submissionCalendar), s = (t.stats?.total || 0) > (e.stats?.total || 0);
-  return r || s;
+function V(e) {
+  return [7, 30, 100].includes(e);
 }
-function x(t) {
-  return [7, 30, 100].includes(t);
-}
-function Q(t, e) {
-  if (e === 0) return !1;
-  E();
-  const r = q();
-  if (p(t)) return !1;
+function Z(e, t) {
+  if (t === 0) return !1;
+  C();
+  const r = X();
+  if (K(e)) return !1;
   let o = !1;
-  for (const [a, i] of Object.entries(t))
-    if (i > 0 && new Date(parseInt(a) * 1e3).toISOString().split("T")[0] === r) {
+  for (const [n, c] of Object.entries(e))
+    if (c > 0 && new Date(parseInt(n) * 1e3).toISOString().split("T")[0] === r) {
       o = !0;
       break;
     }
-  return !o && e > 0;
+  return !o && t > 0;
 }
-function w(t, e, r) {
-  switch (e) {
+function ee(e, t, r) {
+  switch (t) {
     case "solved_today":
-      return `${t} solved today! 🎯`;
+      return `${e} solved today! 🎯`;
     case "milestone":
-      return `${t} hit ${r.streak} day streak! 🔥`;
+      return `${e} hit ${r.streak} day streak! 🔥`;
     case "streak_at_risk":
       return `Your ${r.streak} day streak needs attention! ⚠️`;
     default:
-      return `${t} updated their progress`;
+      return `${e} updated their progress`;
   }
 }
-const I = "leetfriends_sync", B = 30, J = 500;
+const I = "leetfriends_sync", te = 5, re = 500;
 chrome.runtime.onInstalled.addListener(() => {
   console.log("LeetFriends installed - setting up sync alarm"), chrome.alarms.create(I, {
-    periodInMinutes: B
+    periodInMinutes: te
   });
 });
-chrome.alarms.onAlarm.addListener((t) => {
-  t.name === I && (console.log("Background sync triggered"), _());
+chrome.alarms.onAlarm.addListener((e) => {
+  e.name === I && (console.log("Background sync triggered"), N());
 });
-chrome.runtime.onMessage.addListener((t, e, r) => {
-  switch (console.log("Message received:", t.type), t.type) {
+chrome.runtime.onMessage.addListener((e, t, r) => {
+  switch (console.log("Message received:", e.type), e.type) {
     case "FETCH_STATS":
-      return H(t.forceRefresh).then(r), !0;
+      return se(e.forceRefresh).then(r), !0;
     // Async response
     case "ADD_FRIEND":
-      return z(t.username).then(r), !0;
+      return oe(e.username).then(r), !0;
     case "REMOVE_FRIEND":
-      return K(t.username).then(r), !0;
+      return ae(e.username).then(r), !0;
     case "GET_FRIENDS":
-      return V().then(r), !0;
+      return ie().then(r), !0;
     case "MUTE_NOTIFICATIONS":
-      return W(t.untilUTC).then(r), !0;
+      return ce(e.untilUTC).then(r), !0;
     case "GET_NOTIFICATION_STATE":
-      return Z().then(r), !0;
+      return le().then(r), !0;
+    case "ADD_TO_QUEUE":
+      return ne(e.problemData).then(r), !0;
+    case "GITHUB_SYNC_SUBMISSION":
+      return de(e.submissionId, e.submission).then(r), !0;
+    case "GITHUB_SYNC_ENABLED":
+      return Te().then(r), !0;
+    case "MANUAL_SYNC_REQUESTED":
+      return _e().then(r), !0;
+    case "RETRY_FAILED_SYNCS":
+      return Ee().then(r), !0;
+    case "GET_STORAGE_STATUS":
+      return handleGetStorageStatus().then(r), !0;
     default:
       r({ success: !1, error: "Unknown message type" });
   }
 });
-async function H(t = !1) {
+async function se(e = !1) {
   try {
-    const e = await u(), r = Object.keys(e);
+    const t = await d(), r = Object.keys(t);
     if (r.length === 0)
       return { success: !0, friends: {}, message: "No friends added yet" };
-    let s = t;
-    if (!t) {
+    let s = e;
+    if (!e) {
       for (const o of r)
-        if (L(e[o].lastUpdated)) {
+        if (B(t[o].lastUpdated)) {
           s = !0;
           break;
         }
     }
-    return s ? (console.log("Data stale - triggering sync"), await _(), { success: !0, friends: await u(), refreshed: !0 }) : { success: !0, friends: e, cached: !0 };
-  } catch (e) {
-    return console.error("Error in handleFetchStats:", e), { success: !1, error: e.message };
+    return s ? (console.log("Data stale - triggering sync"), await N(), { success: !0, friends: await d(), refreshed: !0 }) : { success: !0, friends: t, cached: !0 };
+  } catch (t) {
+    return console.error("Error in handleFetchStats:", t), { success: !1, error: t.message };
   }
 }
-async function z(t) {
+async function oe(e) {
   try {
-    if (!t)
-      return { success: !1, error: "Username is required" };
-    if (console.log(`Adding friend: ${t}`), await b(t))
+    const t = e;
+    let r;
+    try {
+      r = Y(e);
+    } catch (c) {
+      return { success: !1, error: c.message };
+    }
+    if (console.log(`Adding friend: ${t} (normalized: ${r})`), await U(r))
       return { success: !1, error: `${t} is already in your friends list` };
-    const r = await T(t), s = A(r);
-    return await U(t, s), { success: !0, message: `${t} added successfully`, data: s };
-  } catch (e) {
-    return console.error("Error adding friend:", e), { success: !1, error: e.message || "User not found or profile is private" };
-  }
-}
-async function K(t) {
-  try {
-    return await F(t), { success: !0, message: `${t} removed` };
-  } catch (e) {
-    return console.error("Error removing friend:", e), { success: !1, error: e.message };
-  }
-}
-async function V() {
-  try {
-    return { success: !0, friends: await u() };
+    const o = await E(t), n = v(o);
+    return await k(r, n), { success: !0, message: `${t} added successfully`, data: n };
   } catch (t) {
-    return console.error("Error getting friends:", t), { success: !1, error: t.message };
+    return console.error("Error adding friend:", t), { success: !1, error: t.message || "User not found or profile is private" };
   }
 }
-async function W(t) {
+async function ne(e) {
   try {
-    const { setNotificationMuted: e } = await Promise.resolve().then(() => Y);
-    return await e(t), { success: !0, message: `Notifications muted until ${t}` };
-  } catch (e) {
-    return console.error("Error muting notifications:", e), { success: !1, error: e.message };
-  }
-}
-async function Z() {
-  try {
-    return { success: !0, state: await f() };
+    if (!e)
+      return { success: !1, error: "Problem data is required" };
+    const r = (await chrome.storage.local.get("problem_queue")).problem_queue || [];
+    if (r.some((a) => a.slug === e.slug || a.id === e.slug || a.url && a.url === e.url))
+      return { success: !1, error: "Already in queue!", alreadyExists: !0 };
+    let o = "pending";
+    try {
+      const { my_leetcode_username: a } = await chrome.storage.local.get("my_leetcode_username");
+      if (a) {
+        const u = (await d())[a];
+        u && u.profile && u.profile.recentSubmissions && (u.profile.recentSubmissions || []).some(
+          (h) => h.titleSlug === e.slug && h.statusDisplay === "Accepted"
+        ) && (o = "completed");
+      }
+    } catch (a) {
+      console.error("Error checking submission status:", a);
+    }
+    const n = r.map((a) => (a.id || (a.id = a.slug || `problem-${Date.now()}-${Math.random()}`), a)), c = {
+      ...e,
+      id: e.slug || `problem-${Date.now()}-${Math.random()}`,
+      addedAt: Date.now(),
+      status: o
+      // pending, in-progress, or completed (if already submitted)
+    };
+    return n.push(c), await chrome.storage.local.set({ problem_queue: n }), { success: !0, message: "Added to queue!" + (o === "completed" ? " (Already Submitted)" : ""), status: o };
   } catch (t) {
-    return console.error("Error getting notification state:", t), { success: !1, error: t.message };
+    return console.error("Error adding to queue:", t), { success: !1, error: t.message || "Failed to add to queue" };
   }
 }
-async function _() {
+async function ae(e) {
   try {
-    const t = await R();
-    console.log(`Syncing ${t.length} friends...`), await y() && console.log("Notifications muted - skipping notification detection");
-    const e = [], s = (await chrome.storage.local.get("my_leetcode_username")).my_leetcode_username;
-    for (const o of t)
+    return await H(e), { success: !0, message: `${e} removed` };
+  } catch (t) {
+    return console.error("Error removing friend:", t), { success: !1, error: t.message };
+  }
+}
+async function ie() {
+  try {
+    return { success: !0, friends: await d() };
+  } catch (e) {
+    return console.error("Error getting friends:", e), { success: !1, error: e.message };
+  }
+}
+async function ce(e) {
+  try {
+    const { setNotificationMuted: t } = await Promise.resolve().then(() => W);
+    return await t(e), { success: !0, message: `Notifications muted until ${e}` };
+  } catch (t) {
+    return console.error("Error muting notifications:", t), { success: !1, error: t.message };
+  }
+}
+async function le() {
+  try {
+    return { success: !0, state: await p() };
+  } catch (e) {
+    return console.error("Error getting notification state:", e), { success: !1, error: e.message };
+  }
+}
+async function N() {
+  try {
+    const e = await x();
+    console.log(`Syncing ${e.length} friends...`), await y() && console.log("Notifications muted - skipping notification detection");
+    const t = [], s = (await chrome.storage.local.get("my_leetcode_username")).my_leetcode_username;
+    for (const o of e)
       try {
-        const a = await b(o), i = await T(o), n = A(i);
-        if (await U(o, n), !await y()) {
-          const l = await X(o, a, n);
-          e.push(...l), s && o === s && Q(n.submissionCalendar, n.stats.streak) && e.push({
+        const n = await U(o), c = await E(o), i = v(c);
+        if (await k(o, i), !await y()) {
+          const a = await ue(o, n, i);
+          t.push(...a), s && o === s && Z(i.submissionCalendar, i.stats.streak) && t.push({
             username: "You",
             type: "streak_at_risk",
-            message: w("You", "streak_at_risk", { streak: n.stats.streak }),
+            message: ee("You", "streak_at_risk", { streak: i.stats.streak }),
             priority: 3
           });
         }
-        await tt(J);
-      } catch (a) {
-        console.error(`Error syncing ${o}:`, a);
+        await g(re);
+      } catch (n) {
+        console.error(`Error syncing ${o}:`, n);
       }
-    e.length > 0 ? (console.log(`Sending ${e.length} notification(s):`, e), await C(e)) : console.log("No notification events detected"), console.log("Sync completed");
-  } catch (t) {
-    console.error("Error in syncAllFriends:", t);
+    t.length > 0 ? (console.log(`Sending ${t.length} notification(s):`, t), await A(t)) : console.log("No notification events detected"), console.log("Sync completed");
+  } catch (e) {
+    console.error("Error in syncAllFriends:", e);
   }
 }
-async function X(t, e, r) {
+async function ue(e, t, r) {
   const s = [];
-  if (!await k(t))
-    return console.log(`⏭️  Already notified ${t} today (UTC)`), s;
-  if (console.log(`🔍 Checking events for ${t}...`), p(r.submissionCalendar)) {
-    const i = G(r, e);
-    console.log(`✅ ${t} solved today. Has new activity: ${i}`), i && (console.log(`🔔 Adding notification event for ${t}`), s.push({
-      username: t,
-      type: "solved_today",
-      message: w(t, "solved_today", r),
-      priority: 1
-    }));
-  } else
-    console.log(`❌ ${t} has not solved today`);
-  if (x(r.stats.streak)) {
-    const i = e?.stats?.streak || 0;
-    r.stats.streak > i && (console.log(`🎉 ${t} reached milestone: ${r.stats.streak} day streak!`), s.push({
-      username: t,
+  if (console.log(`🔍 Checking events for ${e}...`), t && t.stats && r.stats) {
+    const o = t.stats.total || 0, n = r.stats.total || 0;
+    if (n > o) {
+      const c = n - o;
+      console.log(`🎯 ${e} submitted ${c} new problem(s)!`);
+      let i = "a problem";
+      r.recentSubmissions && r.recentSubmissions.length > 0 && (i = r.recentSubmissions[0].title || i), s.push({
+        username: e,
+        type: "new_submission",
+        message: `${e} just solved ${c === 1 ? i : `${c} problems`}! 🎯`,
+        priority: 1
+      });
+    }
+  }
+  if (V(r.stats.streak)) {
+    const o = t?.stats?.streak || 0;
+    r.stats.streak > o && (console.log(`🎉 ${e} reached milestone: ${r.stats.streak} day streak!`), s.push({
+      username: e,
       type: "milestone",
-      message: w(t, "milestone", { streak: r.stats.streak }),
+      message: `${e} hit ${r.stats.streak} day streak! 🔥`,
       priority: 2
     }));
   }
-  return s.length > 0 && console.log(`📊 Found ${s.length} event(s) for ${t}`), s;
+  return s.length > 0 && console.log(`📊 Found ${s.length} event(s) for ${e}`), s;
 }
-function A(t) {
-  const { profile: e, contestRanking: r, submissionCalendar: s } = t, o = P(s), a = M(e.submitStats.acSubmissionNum);
+function v(e) {
+  const { profile: t, contestRanking: r, submissionCalendar: s } = e, o = Q(s), n = z(t.submitStats.acSubmissionNum);
   return {
     profile: {
-      username: e.username,
-      realName: e.profile.realName,
-      avatar: e.profile.userAvatar,
-      ranking: e.profile.ranking
+      username: t.username,
+      realName: t.profile.realName,
+      avatar: t.profile.userAvatar,
+      ranking: t.profile.ranking
     },
     stats: {
-      ...a,
+      ...n,
       streak: o
     },
     contest: {
@@ -472,12 +619,311 @@ function A(t) {
       attended: r?.attendedContestsCount || 0,
       ranking: r?.globalRanking || 0
     },
-    badges: e.badges || [],
-    recentSubmissions: e.recentSubmissions || [],
+    badges: t.badges || [],
+    recentSubmissions: t.recentSubmissions || [],
     submissionCalendar: s,
     lastUpdated: Date.now()
   };
 }
-function tt(t) {
-  return new Promise((e) => setTimeout(e, t));
+function g(e) {
+  return new Promise((t) => setTimeout(t, e));
+}
+async function de(e, t) {
+  try {
+    console.log("🐙 GitHub Sync: Processing submission", e), console.log("📝 Submission details:", {
+      title: t.problemTitle,
+      language: t.language,
+      codeLength: t.code?.length || 0
+    });
+    const r = await chrome.storage.local.get([
+      "github_token",
+      "github_username",
+      "github_repo",
+      "github_sync_enabled"
+    ]);
+    if (console.log("⚙️ GitHub settings:", {
+      enabled: r.github_sync_enabled,
+      hasToken: !!r.github_token,
+      username: r.github_username,
+      repo: r.github_repo
+    }), !r.github_sync_enabled || !r.github_token)
+      return console.error("❌ GitHub sync not enabled or token missing"), { success: !1, error: "GitHub sync not enabled" };
+    console.log("🔄 Starting sync with retry logic...");
+    const s = await O(t, r, 3);
+    if (s.success)
+      return console.log("✅ GitHub sync successful!"), await chrome.storage.local.remove(e), chrome.notifications.create({
+        type: "basic",
+        iconUrl: "/icons/icon128.png",
+        title: "GitHub Sync Success",
+        message: `✅ Synced "${t.problemTitle}" to GitHub!`,
+        priority: 1
+      }), { success: !0 };
+    {
+      console.error("❌ GitHub sync failed:", s.error);
+      const n = (await chrome.storage.local.get("failed_syncs")).failed_syncs || [];
+      return n.push({
+        submission: t,
+        error: s.error,
+        timestamp: Date.now(),
+        retryCount: 0
+      }), await chrome.storage.local.set({ failed_syncs: n }), chrome.notifications.create({
+        type: "basic",
+        iconUrl: "/icons/icon128.png",
+        title: "GitHub Sync Failed",
+        message: `❌ Failed to sync "${t.problemTitle}": ${s.error}`,
+        priority: 2
+      }), { success: !1, error: s.error };
+    }
+  } catch (r) {
+    return console.error("GitHub Sync error:", r), { success: !1, error: r.message };
+  }
+}
+async function O(e, t, r = 3) {
+  const s = [1e3, 3e3, 9e3];
+  for (let o = 0; o < r; o++)
+    try {
+      const n = await fe(e, t);
+      if (n.success)
+        return n;
+      if (n.error?.includes("rate limit")) {
+        await g(6e4);
+        continue;
+      }
+      o < r - 1 && await g(s[o]);
+    } catch (n) {
+      if (o === r - 1)
+        return { success: !1, error: n.message };
+      await g(s[o]);
+    }
+  return { success: !1, error: "Max retries exceeded" };
+}
+async function fe(e, t) {
+  const { github_token: r, github_username: s, github_repo: o } = t, n = ge(e), c = await pe(r, s, o, n), i = he(e);
+  if (c.exists && atob(c.content).trim() === i.trim())
+    return { success: !0, skipped: !0 };
+  const a = c.exists ? `Update: ${e.problemTitle} (${e.language})` : `Add: ${e.problemTitle} (${e.language})`, l = await we(
+    r,
+    s,
+    o,
+    n,
+    i,
+    a,
+    c.sha
+  );
+  return l.success && await Se(e, n, l.fileUrl), l;
+}
+function ge(e) {
+  const { problemSlug: t, questionNumber: r, language: s, topics: o } = e, c = {
+    python3: "py",
+    javascript: "js",
+    typescript: "ts",
+    java: "java",
+    cpp: "cpp",
+    c: "c",
+    csharp: "cs",
+    go: "go",
+    rust: "rs",
+    swift: "swift",
+    kotlin: "kt"
+  }[s.toLowerCase()] || "txt", a = `${String(r).padStart(4, "0")}-${t}.${c}`;
+  return `${o && o.length > 0 ? me(o[0]) : "Unsorted"}/${a}`;
+}
+function me(e) {
+  return e.replace(/[<>:"/\\|?*]/g, "-").replace(/\s+/g, "-").replace(/--+/g, "-").replace(/^-|-$/g, "");
+}
+function he(e) {
+  const { problemTitle: t, difficulty: r, topics: s, questionNumber: o, problemUrl: n, code: c, language: i } = e, a = ye(i);
+  return [
+    `${a} ${o}. ${t}`,
+    `${a} Difficulty: ${r}`,
+    `${a} Topics: ${s.join(", ")}`,
+    `${a} LeetCode: ${n}`,
+    `${a} Synced: ${(/* @__PURE__ */ new Date()).toISOString()}`,
+    "",
+    c
+  ].join(`
+`);
+}
+function ye(e) {
+  return {
+    python3: "#",
+    python: "#",
+    javascript: "//",
+    typescript: "//",
+    java: "//",
+    cpp: "//",
+    c: "//",
+    csharp: "//",
+    go: "//",
+    rust: "//",
+    swift: "//",
+    kotlin: "//",
+    php: "//"
+  }[e.toLowerCase()] || "//";
+}
+async function pe(e, t, r, s) {
+  try {
+    const o = await fetch(
+      `https://api.github.com/repos/${t}/${r}/contents/${s}`,
+      {
+        headers: {
+          Authorization: `token ${e}`,
+          Accept: "application/vnd.github.v3+json"
+        }
+      }
+    );
+    if (o.status === 404)
+      return { exists: !1 };
+    if (!o.ok)
+      throw new Error(`GitHub API error: ${o.status}`);
+    const n = await o.json();
+    return {
+      exists: !0,
+      content: n.content,
+      sha: n.sha
+    };
+  } catch (o) {
+    return { exists: !1, error: o.message };
+  }
+}
+async function we(e, t, r, s, o, n, c = null) {
+  try {
+    await be(e, t, r);
+    const i = btoa(unescape(encodeURIComponent(o))), a = {
+      message: n,
+      content: i,
+      branch: "main"
+    };
+    c && (a.sha = c);
+    const l = await fetch(
+      `https://api.github.com/repos/${t}/${r}/contents/${s}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${e}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(a)
+      }
+    );
+    if (!l.ok) {
+      const f = await l.json();
+      throw new Error(f.message || `GitHub API error: ${l.status}`);
+    }
+    const u = await l.json();
+    return {
+      success: !0,
+      fileUrl: u.content.html_url,
+      commitUrl: u.commit.html_url
+    };
+  } catch (i) {
+    return { success: !1, error: i.message };
+  }
+}
+async function be(e, t, r) {
+  try {
+    const s = await fetch(
+      `https://api.github.com/repos/${t}/${r}`,
+      {
+        headers: {
+          Authorization: `token ${e}`,
+          Accept: "application/vnd.github.v3+json"
+        }
+      }
+    );
+    if (s.ok)
+      return !0;
+    if (s.status === 404) {
+      console.log("📦 Repository not found, creating:", r);
+      const o = await fetch(
+        "https://api.github.com/user/repos",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `token ${e}`,
+            Accept: "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: r,
+            description: "My LeetCode solutions - Auto-synced by LeetStreak extension",
+            private: !1,
+            auto_init: !0
+          })
+        }
+      );
+      if (!o.ok) {
+        const n = await o.json();
+        throw console.error("❌ GitHub API error:", o.status, n), new Error(`Failed to create repository: ${n.message || o.status}`);
+      }
+      return console.log("✅ Repository created successfully"), await g(2e3), !0;
+    }
+    throw new Error(`Failed to check repository: ${s.status}`);
+  } catch (s) {
+    return console.error("Error ensuring repo exists:", s), !1;
+  }
+}
+async function Se(e, t, r) {
+  try {
+    const s = await chrome.storage.local.get(["synced_problems", "recent_syncs"]), o = s.synced_problems || [], n = s.recent_syncs || [];
+    o.push({
+      problemSlug: e.problemSlug,
+      language: e.language,
+      filePath: t,
+      fileUrl: r,
+      timestamp: Date.now()
+    }), n.unshift({
+      problemTitle: e.problemTitle,
+      language: e.language,
+      status: "success",
+      timestamp: Date.now()
+    }), await chrome.storage.local.set({
+      synced_problems: o,
+      recent_syncs: n.slice(0, 20)
+    });
+  } catch (s) {
+    console.error("Failed to record sync:", s);
+  }
+}
+async function Te() {
+  return console.log("GitHub sync enabled - initializing cleanup alarm"), chrome.alarms.create("github_cleanup", {
+    periodInMinutes: 60
+    // Every hour
+  }), { success: !0 };
+}
+async function _e() {
+  return { success: !0, message: "Manual sync feature coming soon" };
+}
+async function Ee() {
+  try {
+    const t = (await chrome.storage.local.get("failed_syncs")).failed_syncs || [];
+    if (t.length === 0)
+      return { success: !0, retried: 0 };
+    const r = await chrome.storage.local.get([
+      "github_token",
+      "github_username",
+      "github_repo"
+    ]);
+    let s = 0;
+    const o = [];
+    for (const n of t)
+      (await O(n.submission, r, 2)).success ? s++ : (n.retryCount++, o.push(n)), await g(1e3);
+    return await chrome.storage.local.set({ failed_syncs: o }), { success: !0, retried: s, failed: o.length };
+  } catch (e) {
+    return { success: !1, error: e.message };
+  }
+}
+chrome.alarms.onAlarm.addListener((e) => {
+  e.name === "github_cleanup" && $e();
+});
+async function $e() {
+  try {
+    const e = await chrome.storage.local.get(null), t = Date.now(), r = [];
+    for (const [s, o] of Object.entries(e))
+      s.startsWith("pending_") && o.timestamp && t - o.timestamp > 3600 * 1e3 && r.push(s);
+    r.length > 0 && (await chrome.storage.local.remove(r), console.log(`Cleaned up ${r.length} old pending submissions`));
+  } catch (e) {
+    console.error("Cleanup error:", e);
+  }
 }

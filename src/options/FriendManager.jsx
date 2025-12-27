@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Flame } from 'lucide-react';
 import { getTimeSinceUpdate } from '../shared/streak-calculator';
 
 function FriendManager({ friends, loading, onFriendRemoved, onFriendAdded }) {
@@ -144,7 +145,10 @@ function FriendManager({ friends, loading, onFriendRemoved, onFriendAdded }) {
                   <div className="text-2xl font-bold text-orange-500">
                     {friend.stats.streak}
                   </div>
-                  <div className="text-xs text-gray-500">🔥 Streak</div>
+                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                    <Flame className="w-3 h-3" />
+                    Streak
+                  </div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-700">

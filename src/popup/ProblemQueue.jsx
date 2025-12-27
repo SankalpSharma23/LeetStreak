@@ -7,12 +7,88 @@ function ProblemQueue() {
 
   useEffect(() => {
     loadProblems();
+    
+    // Listen for changes to problem_queue (e.g., when added from LeetCode site)
+    const handleStorageChange = (changes, areaName) => {
+      if (areaName === 'local' && changes.problem_queue) {
+        loadProblems();
+      }
+    };
+    
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, []);
+
+  // Check if problems are already submitted and mark as completed
+  const checkAndUpdateCompletedProblems = async (problemsList) => {
+    try {
+      // Get user's LeetCode username
+      const { my_leetcode_username } = await chrome.storage.local.get('my_leetcode_username');
+      if (!my_leetcode_username || !problemsList || problemsList.length === 0) return;
+
+      // Fetch user data to check recent submissions
+      const response = await chrome.runtime.sendMessage({
+        type: 'FETCH_STATS',
+        forceRefresh: false
+      });
+
+      if (response.success && response.friends && response.friends[my_leetcode_username]) {
+        const myData = response.friends[my_leetcode_username];
+        const recentSubmissions = myData?.profile?.recentSubmissions || [];
+        
+        // Get accepted problem slugs
+        const acceptedSlugs = new Set(
+          recentSubmissions
+            .filter(sub => sub.statusDisplay === 'Accepted')
+            .map(sub => sub.titleSlug)
+        );
+
+        // Update problems that are already completed
+        const updatedProblems = problemsList.map(problem => {
+          if (problem.slug && acceptedSlugs.has(problem.slug) && problem.status !== 'completed') {
+            return { ...problem, status: 'completed' };
+          }
+          return problem;
+        });
+
+        // Save if any changes
+        const hasChanges = updatedProblems.some((p, idx) => p.status !== problemsList[idx]?.status);
+        if (hasChanges) {
+          await chrome.storage.local.set({ problem_queue: updatedProblems });
+          setProblems(updatedProblems);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking completed problems:', error);
+    }
+  };
 
   const loadProblems = async () => {
     try {
       const result = await chrome.storage.local.get('problem_queue');
-      setProblems(result.problem_queue || []);
+      const rawProblems = result.problem_queue || [];
+      
+      // Normalize problems: ensure all have an id field
+      const normalizedProblems = rawProblems.map(problem => {
+        // If no id, use slug as id, or generate one
+        if (!problem.id) {
+          problem.id = problem.slug || `problem-${Date.now()}-${Math.random()}`;
+        }
+        return problem;
+      });
+      
+      // Save normalized problems back if any were normalized
+      if (rawProblems.some(p => !p.id)) {
+        await chrome.storage.local.set({ problem_queue: normalizedProblems });
+      }
+      
+      setProblems(normalizedProblems);
+      
+      // Check and update completed problems after loading
+      checkAndUpdateCompletedProblems(normalizedProblems);
     } catch (error) {
       console.error('Error loading problems:', error);
     }
@@ -27,16 +103,54 @@ function ProblemQueue() {
     }
   };
 
-  const addProblem = () => {
+  const addProblem = async () => {
     if (!newProblem.trim()) return;
 
+    const slug = extractSlug(newProblem.trim());
+    const url = extractLeetCodeUrl(newProblem.trim());
+    
+    // Check for duplicates by slug
+    const exists = problems.some(p => {
+      const existingSlug = p.slug || extractSlug(p.url || '');
+      return existingSlug === slug;
+    });
+    
+    if (exists) {
+      alert('This problem is already in your queue!');
+      return;
+    }
+
+    // Check if already submitted
+    let status = 'pending';
+    try {
+      const { my_leetcode_username } = await chrome.storage.local.get('my_leetcode_username');
+      if (my_leetcode_username) {
+        const response = await chrome.runtime.sendMessage({
+          type: 'FETCH_STATS',
+          forceRefresh: false
+        });
+        if (response.success && response.friends && response.friends[my_leetcode_username]) {
+          const myData = response.friends[my_leetcode_username];
+          const recentSubmissions = myData?.profile?.recentSubmissions || [];
+          const isCompleted = recentSubmissions.some(
+            sub => sub.titleSlug === slug && sub.statusDisplay === 'Accepted'
+          );
+          if (isCompleted) {
+            status = 'completed';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking submission status:', error);
+    }
+
     const problem = {
-      id: Date.now(),
+      id: slug || Date.now(), // Use slug as id for consistency
       title: newProblem.trim(),
-      slug: extractSlug(newProblem.trim()),
-      url: extractLeetCodeUrl(newProblem.trim()),
+      slug: slug,
+      url: url,
       addedAt: Date.now(),
-      status: 'pending', // pending, in-progress, completed
+      status: status, // pending, in-progress, completed
       difficulty: 'Medium'
     };
 
@@ -45,10 +159,12 @@ function ProblemQueue() {
     setShowInput(false);
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = problems.map(p => 
-      p.id === id ? { ...p, status: newStatus } : p
-    );
+  const updateStatus = (identifier, newStatus) => {
+    const updated = problems.map(p => {
+      // Match by id or slug
+      const matches = p.id === identifier || p.slug === identifier;
+      return matches ? { ...p, status: newStatus } : p;
+    });
     saveProblems(updated);
   };
 
@@ -64,8 +180,9 @@ function ProblemQueue() {
       .replace(/\s+/g, '-');
   };
 
-  const removeProblem = (id) => {
-    saveProblems(problems.filter(p => p.id !== id));
+  const removeProblem = (identifier) => {
+    // Remove by id or slug
+    saveProblems(problems.filter(p => p.id !== identifier && p.slug !== identifier));
   };
 
   const extractLeetCodeUrl = (text) => {
@@ -124,11 +241,12 @@ function ProblemQueue() {
               Add to Queue
             </button>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowInput(false);
                 setNewProblem('');
               }}
-              className="px-3 py-1.5 text-[10px] font-semibold text-text-muted hover:text-text-main bg-surface hover:bg-surfaceHover rounded-md transition-all"
+              className="px-3 py-1.5 text-[10px] font-semibold text-text-muted hover:text-text-main bg-surface hover:bg-surfaceHover rounded-md transition-all active:scale-95"
             >
               Cancel
             </button>
@@ -144,7 +262,7 @@ function ProblemQueue() {
           <p className="text-[9px] mt-0.5">Visit LeetCode problems and click "Add to Queue"</p>
         </div>
       ) : (
-        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-hide">
           {problems.map((problem) => {
             const difficultyColors = {
               Easy: 'text-leetcode-easy',
@@ -157,16 +275,25 @@ function ProblemQueue() {
               completed: '✅'
             };
             
+            const isCompleted = problem.status === 'completed';
+            
             return (
               <div
-                key={problem.id || problem.slug}
-                className="flex items-center gap-2 p-2 bg-background/50 rounded-lg border border-surfaceHover hover:border-primary/40 transition-all group"
+                key={problem.id}
+                className={`flex items-center gap-2 p-2 rounded-lg border transition-all group ${
+                  isCompleted 
+                    ? 'bg-green-500/5 border-green-500/20 hover:border-green-500/40' 
+                    : 'bg-background/50 border-surfaceHover hover:border-primary/40'
+                }`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-[10px]">{statusIcons[problem.status] || '📋'}</span>
-                    <div className="text-[10px] font-semibold text-text-main truncate group-hover:text-primary transition-colors">
+                    <div className={`text-[10px] font-semibold truncate group-hover:text-primary transition-colors ${
+                      isCompleted ? 'text-green-400' : 'text-text-main'
+                    }`}>
                       {problem.title}
+                      {isCompleted && <span className="ml-1.5 text-[8px] text-green-400/70">(Submitted)</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-[8px] text-text-muted">
@@ -176,14 +303,23 @@ function ProblemQueue() {
                     {problem.number && <span>#{problem.number}</span>}
                     <span>•</span>
                     <span>Added {new Date(problem.addedAt).toLocaleDateString()}</span>
+                    {isCompleted && (
+                      <>
+                        <span>•</span>
+                        <span className="text-green-400 font-semibold">✓ Submitted</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   {problem.status !== 'completed' && (
                     <button
-                      onClick={() => updateStatus(problem.id || problem.slug, 
-                        problem.status === 'pending' ? 'in-progress' : 'completed')}
-                      className="px-2 py-1 text-[9px] font-semibold text-accent hover:text-accent bg-accent/10 hover:bg-accent/20 rounded transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateStatus(problem.id, 
+                          problem.status === 'pending' ? 'in-progress' : 'completed');
+                      }}
+                      className="px-2 py-1 text-[9px] font-semibold text-accent hover:text-accent bg-accent/10 hover:bg-accent/20 rounded transition-all active:scale-95"
                       title={problem.status === 'pending' ? 'Start' : 'Complete'}
                     >
                       {problem.status === 'pending' ? '▶' : '✓'}
@@ -197,8 +333,11 @@ function ProblemQueue() {
                     Open
                   </button>
                   <button
-                    onClick={() => removeProblem(problem.id || problem.slug)}
-                    className="px-1.5 py-1 text-[9px] font-semibold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 rounded transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeProblem(problem.id);
+                    }}
+                    className="px-1.5 py-1 text-[9px] font-semibold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 rounded transition-all active:scale-95"
                     title="Remove"
                   >
                     ✕

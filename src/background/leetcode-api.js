@@ -1,6 +1,81 @@
 // LeetCode GraphQL API endpoint
 const LEETCODE_API = 'https://leetcode.com/graphql';
 
+// Network configuration
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 10000; // 10 seconds
+
+/**
+ * Sleep utility for retry delays
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch with retry, timeout, and offline detection
+ * @param {string} url - URL to fetch
+ * @param {Object} options - Fetch options
+ * @param {number} retries - Number of retries
+ * @returns {Promise<Response>} Fetch response
+ */
+async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
+  let lastError;
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      // Check online status (in service worker context)
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('No internet connection. Please check your network.');
+      }
+      
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Handle rate limiting with retry
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get('Retry-After')) || Math.pow(2, attempt);
+        console.log(`[API] Rate limited. Retrying after ${retryAfter}s`);
+        await sleep(retryAfter * 1000);
+        continue;
+      }
+      
+      // Success or non-retryable error
+      return response;
+      
+    } catch (error) {
+      lastError = error;
+      
+      if (error.name === 'AbortError') {
+        console.error(`[API] Request timeout (${TIMEOUT_MS}ms)`);
+        lastError = new Error(`Request timed out after ${TIMEOUT_MS / 1000} seconds`);
+      }
+      
+      // Don't retry on offline or user errors
+      if (error.message.includes('No internet connection')) {
+        throw error;
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s
+      if (attempt < retries - 1) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`[API] Retry ${attempt + 1}/${retries} in ${delay}ms`);
+        await sleep(delay);
+      }
+    }
+  }
+  
+  throw lastError || new Error('Network request failed after multiple retries');
+}
+
 // GraphQL queries
 const USER_PROFILE_QUERY = `
   query getUserProfile($username: String!) {
@@ -55,8 +130,8 @@ export async function fetchUserData(username) {
   try {
     console.log(`[API] Fetching data for user: ${username}`);
     
-    // Fetch user profile, stats, and submission calendar in one request
-    const profileResponse = await fetch(LEETCODE_API, {
+    // Fetch user profile, stats, and submission calendar with retry/timeout
+    const profileResponse = await fetchWithRetry(LEETCODE_API, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Bell, X, Flame, Target, AlertTriangle } from 'lucide-react';
 
 function NotificationToast({ notifications, onDismiss }) {
   const [visible, setVisible] = useState(false);
@@ -27,37 +28,73 @@ function NotificationToast({ notifications, onDismiss }) {
   const current = notifications[0];
   const remaining = notifications.length;
 
+  const getIcon = () => {
+    switch (current.type) {
+      case 'new_submission':
+      case 'solved_today':
+        return <Target className="w-8 h-8 text-primary" />;
+      case 'milestone':
+        return <Flame className="w-8 h-8 text-orange-500" />;
+      case 'streak_at_risk':
+        return <AlertTriangle className="w-8 h-8 text-yellow-500" />;
+      default:
+        return <Bell className="w-8 h-8 text-primary" />;
+    }
+  };
+
   return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
-      <div className="bg-gradient-to-r from-primary/90 to-primaryHover/90 backdrop-blur-md border border-primary/40 rounded-2xl shadow-2xl p-4 min-w-[320px] max-w-[360px]">
-        <div className="flex items-start gap-3">
-          <span className="text-3xl">
-            {current.type === 'solved_today' && '🎯'}
-            {current.type === 'milestone' && '🔥'}
-            {current.type === 'streak_at_risk' && '⚠️'}
-          </span>
-          <div className="flex-1">
-            <div className="font-bold text-sm text-white mb-1">
-              {current.username}
-            </div>
-            <div className="text-xs text-white/90">
-              {current.message}
-            </div>
-            {remaining > 1 && (
-              <div className="text-[10px] text-white/70 mt-2">
-                {remaining - 1} more notification{remaining - 1 > 1 ? 's' : ''}
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-fade-in" onClick={handleDismiss}></div>
+      
+      {/* Centered Modal */}
+      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div className="pointer-events-auto animate-scale-in-center">
+          <div className="bg-surface border-2 border-primary/30 rounded-3xl shadow-2xl p-8 w-[340px] relative">
+            {/* Close Button */}
+            <button
+              onClick={handleDismiss}
+              className="absolute top-4 right-4 text-text-muted hover:text-text-main transition-colors p-1 hover:bg-surfaceHover rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                {getIcon()}
               </div>
-            )}
+            </div>
+
+            {/* Content */}
+            <div className="text-center">
+              <div className="font-bold text-lg text-text-main mb-2">
+                {current.username}
+              </div>
+              <div className="text-sm text-text-muted mb-6">
+                {current.message}
+              </div>
+
+              {/* Badge Count */}
+              {remaining > 1 && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-xs text-primary font-semibold mb-4">
+                  <Bell className="w-3 h-3" />
+                  {remaining - 1} more notification{remaining - 1 > 1 ? 's' : ''}
+                </div>
+              )}
+
+              {/* Action Button */}
+              <button
+                onClick={handleDismiss}
+                className="w-full py-3 bg-primary hover:bg-primaryHover text-inverted font-semibold rounded-xl transition-all duration-200 active:scale-95"
+              >
+                Got it!
+              </button>
+            </div>
           </div>
-          <button
-            onClick={handleDismiss}
-            className="text-white/80 hover:text-white text-lg font-bold leading-none transition-colors"
-          >
-            ✕
-          </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

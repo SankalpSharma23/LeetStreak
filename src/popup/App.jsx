@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Users, TrendingUp, BarChart3, Github, Rocket, Loader2, Sparkles, Frown, FileBarChart } from 'lucide-react';
 import Leaderboard from './Leaderboard';
 import AddFriend from './AddFriend';
 import LoadingSkeleton from './LoadingSkeleton';
@@ -7,15 +8,17 @@ import NotificationSettings from './NotificationSettings';
 import NotificationToast from './NotificationToast';
 import InsightsPanelEnhanced from './InsightsPanelEnhanced';
 import ProgressChart from './ProgressChart';
+import GitHubSync from './GitHubSync';
+import Footer from './Footer';
 import { getTimeSinceUpdate } from '../shared/streak-calculator';
 
 function App() {
   const [friends, setFriends] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [error, setError] = useState(null);
-  const [view, setView] = useState('streak'); // 'streak', 'leaderboard', or 'analytics'
+  const [view, setView] = useState('streak'); // 'streak', 'leaderboard', 'analytics', or 'github'
   const [myUsername, setMyUsername] = useState(null);
   const [setupMode, setSetupMode] = useState(false);
   const [setupUsername, setSetupUsername] = useState('');
@@ -131,7 +134,6 @@ function App() {
         await chrome.storage.local.set({ my_leetcode_username: setupUsername.trim() });
         setMyUsername(setupUsername.trim());
         setSetupMode(false);
-        setLoading(true);
         // Wait a bit for data to propagate
         await new Promise(resolve => setTimeout(resolve, 500));
         await fetchFriends();
@@ -150,10 +152,10 @@ function App() {
     const startTime = Date.now();
     
     try {
+      // Always show loading state when actively fetching
+      setLoading(true);
       if (forceRefresh) {
         setRefreshing(true);
-      } else {
-        setLoading(true);
       }
       setError(null);
 
@@ -177,14 +179,15 @@ function App() {
       console.error('Error fetching friends:', err);
       setError('Failed to connect to background service');
     } finally {
-      // Ensure minimum 3 seconds of loading animation
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, 3000 - elapsedTime);
-      
-      setTimeout(() => {
+      // Only delay if we're actually fetching data (forceRefresh)
+      if (forceRefresh) {
         setLoading(false);
         setRefreshing(false);
-      }, remainingTime);
+      } else {
+        // For initial load, show immediately
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -215,17 +218,17 @@ function App() {
     console.log('Rendering setup mode');
     return (
       <div className="w-[400px] h-[600px] bg-background flex items-center justify-center p-8">
-        <div className="text-center max-w-sm w-full animate-fade-in">
+        <div className="text-center max-w-sm w-full animate-fade-in mx-auto">
           <div className="w-24 h-24 bg-surface rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg ring-4 ring-surfaceHover">
-            <span className="text-5xl animate-bounce-slow">🚀</span>
+            <Rocket className="w-12 h-12 text-primary animate-bounce-slow" />
           </div>
-          <h1 className="text-2xl font-bold text-text-main mb-2">Welcome to LeetStreak!</h1>
-          <p className="text-sm text-text-muted mb-8">
+          <h1 className="text-2xl font-bold text-text-main mb-2 text-center">Welcome to LeetStreak!</h1>
+          <p className="text-sm text-text-muted mb-8 text-center mx-auto">
             Enter your LeetCode username to track your coding journey and streaks
           </p>
           
-          <form onSubmit={handleSetup} className="space-y-4">
-            <div className="relative group">
+          <form onSubmit={handleSetup} className="space-y-4 w-full">
+            <div className="relative group w-full">
               <input
                 type="text"
                 value={setupUsername}
@@ -238,7 +241,7 @@ function App() {
             </div>
             
             {setupError && (
-              <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20 text-sm text-red-400 animate-shake">
+              <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20 text-sm text-red-400 animate-shake text-center w-full">
                 {setupError}
               </div>
             )}
@@ -248,11 +251,17 @@ function App() {
               disabled={setupLoading}
               className="w-full py-4 bg-primary hover:bg-primaryHover text-inverted font-bold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-primary/20 active:scale-95"
             >
-              {setupLoading ? '⏳ Verifying...' : '✨ Get Started'}
+              <span className="flex items-center justify-center gap-2">
+                {setupLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Get Started</>
+                )}
+              </span>
             </button>
           </form>
           
-          <p className="mt-6 text-xs text-text-muted">
+          <p className="mt-6 text-xs text-text-muted text-center mx-auto">
             We'll fetch your LeetCode stats and start tracking your progress
           </p>
         </div>
@@ -263,13 +272,13 @@ function App() {
   console.log('Rendering main app - loading:', loading, 'error:', error, 'hasData:', hasData);
 
   return (
-    <div className="w-[400px] h-[600px] bg-background flex flex-col overflow-hidden text-text-main">
+    <div className="w-[400px] h-[600px] bg-gradient-to-br from-background via-background to-surface/20 flex flex-col overflow-hidden text-text-main">
       {loading ? (
         <LoadingSkeleton count={3} />
       ) : error ? (
         <div className="flex-1 flex items-center justify-center p-6 animate-fade-in">
           <div className="text-center">
-            <div className="text-4xl mb-3 animate-bounce-slow">😕</div>
+            <Frown className="w-16 h-16 text-text-muted mb-3 animate-bounce-slow mx-auto" />
             <p className="text-red-400 font-semibold mb-2">Oops!</p>
             <p className="text-sm text-text-muted mb-6">{error}</p>
             <button
@@ -283,7 +292,7 @@ function App() {
       ) : !hasData ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
           <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mb-6 ring-2 ring-surfaceHover">
-            <span className="text-4xl animate-pulse-slow">📊</span>
+            <FileBarChart className="w-16 h-16 text-primary animate-pulse-slow" />
           </div>
           <h3 className="text-xl font-bold text-text-main mb-2">Loading Your Data</h3>
           <p className="text-sm text-text-muted mb-8 max-w-xs">
@@ -299,46 +308,69 @@ function App() {
       ) : (
         <>
           {/* Top Navigation Tabs with Settings Button */}
-          <div className="flex border-b border-surfaceHover bg-surface/50 backdrop-blur-sm sticky top-0 z-10">
-            <div className="flex flex-1 px-4">
+          <div className="flex border-b border-surfaceHover/50 bg-surface/95 backdrop-blur-md sticky top-0 z-10 shadow-lg">
+            <div className="flex flex-1 gap-0 px-2">
+              <button
+                onClick={() => setView('leaderboard')}
+                className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
+                  view === 'leaderboard' ? 'text-primary' : 'text-text-muted hover:text-text-main'
+                }`}
+              >
+                <Users className={`w-5 h-5 mx-auto mb-1.5 transition-transform duration-200 ${
+                  view === 'leaderboard' ? 'scale-110' : 'group-hover:scale-105'
+                }`} />
+                <span className="text-[11px] font-semibold">Friends</span>
+                {view === 'leaderboard' && (
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+                )}
+              </button>
               <button
                 onClick={() => setView('streak')}
-                className={`flex-1 py-4 text-xs font-semibold transition-all duration-300 relative ${
+                className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
                   view === 'streak' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                🔥 Progress
+                <TrendingUp className={`w-5 h-5 mx-auto mb-1.5 transition-transform duration-200 ${
+                  view === 'streak' ? 'scale-110' : 'group-hover:scale-105'
+                }`} />
+                <span className="text-[11px] font-semibold">Progress</span>
                 {view === 'streak' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(245,158,11,0.5)]"></div>
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
                 )}
               </button>
               <button
                 onClick={() => setView('analytics')}
-                className={`flex-1 py-4 text-xs font-semibold transition-all duration-300 relative ${
+                className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
                   view === 'analytics' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                📊 Analytics
+                <BarChart3 className={`w-5 h-5 mx-auto mb-1.5 transition-transform duration-200 ${
+                  view === 'analytics' ? 'scale-110' : 'group-hover:scale-105'
+                }`} />
+                <span className="text-[11px] font-semibold">Analytics</span>
                 {view === 'analytics' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(245,158,11,0.5)]"></div>
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
                 )}
               </button>
               <button
-                onClick={() => setView('leaderboard')}
-                className={`flex-1 py-4 text-xs font-semibold transition-all duration-300 relative ${
-                  view === 'leaderboard' ? 'text-primary' : 'text-text-muted hover:text-text-main'
+                onClick={() => setView('github')}
+                className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
+                  view === 'github' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                🏆 Friends
-                {view === 'leaderboard' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(245,158,11,0.5)]"></div>
+                <Github className={`w-5 h-5 mx-auto mb-1.5 transition-transform duration-200 ${
+                  view === 'github' ? 'scale-110' : 'group-hover:scale-105'
+                }`} />
+                <span className="text-[11px] font-semibold">GitHub</span>
+                {view === 'github' && (
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
                 )}
               </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 pr-2">
               <button
                 onClick={toggleTheme}
-                className="px-3 py-4 text-text-muted hover:text-primary transition-colors"
+                className="p-2.5 text-text-muted hover:text-primary transition-all duration-200 hover:bg-surfaceHover/50 rounded-lg"
                 title="Toggle Theme"
               >
                 {theme === 'dark' ? (
@@ -353,7 +385,7 @@ function App() {
               </button>
               <button
                 onClick={() => setShowNotificationSettings(true)}
-                className="px-3 py-4 text-text-muted hover:text-primary transition-colors"
+                className="p-2.5 text-text-muted hover:text-primary transition-all duration-200 hover:bg-surfaceHover/50 rounded-lg"
                 title="Notification Settings"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,7 +402,7 @@ function App() {
           />
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden bg-background flex flex-col">
+          <div className="flex-1 overflow-hidden bg-background flex flex-col pb-10">
             {view === 'streak' ? (
               hasData ? (
                 <StreakView 
@@ -382,7 +414,7 @@ function App() {
               ) : (
                 <div className="flex items-center justify-center h-full p-8 text-center">
                   <div>
-                    <div className="text-5xl mb-4 animate-pulse">📊</div>
+                    <FileBarChart className="w-20 h-20 text-primary mb-4 animate-pulse mx-auto" />
                     <p className="text-text-muted mb-4">Loading your progress...</p>
                     <button
                       onClick={handleRefresh}
@@ -395,7 +427,7 @@ function App() {
               )
             ) : view === 'analytics' ? (
               myData ? (
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
                   {myData.submissionCalendar && (
                     <ProgressChart submissionCalendar={typeof myData.submissionCalendar === 'string' ? JSON.parse(myData.submissionCalendar) : myData.submissionCalendar} />
                   )}
@@ -404,7 +436,7 @@ function App() {
               ) : (
                 <div className="flex items-center justify-center h-full p-8 text-center">
                   <div>
-                    <div className="text-5xl mb-4 animate-pulse">📊</div>
+                    <BarChart3 className="w-20 h-20 text-primary mb-4 animate-pulse mx-auto" />
                     <p className="text-text-muted mb-4">Loading analytics data...</p>
                     <button
                       onClick={handleRefresh}
@@ -415,10 +447,12 @@ function App() {
                   </div>
                 </div>
               )
+            ) : view === 'github' ? (
+              <GitHubSync />
             ) : (
               <>
                 <AddFriend onFriendAdded={handleFriendAdded} />
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto scrollbar-hide">
                   <Leaderboard friends={friendsList} myData={myData} myUsername={myUsername} onRefresh={handleRefresh} />
                 </div>
               </>
@@ -432,6 +466,9 @@ function App() {
         notifications={notifications} 
         onDismiss={handleDismissNotifications} 
       />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

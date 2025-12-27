@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PartyPopper, Sparkles, Star, Zap } from 'lucide-react';
 import { getDailyChallenge, getChallengeProgress, updateChallengeProgress } from '../shared/daily-challenge';
 
 export default function DailyChallengeCard({ userStats }) {
@@ -63,19 +64,23 @@ export default function DailyChallengeCard({ userStats }) {
     <div className="bg-surface border border-primary/30 rounded-xl p-6 shadow-lg relative overflow-hidden">
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none z-10">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-confetti text-2xl"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
-              }}
-            >
-              {['🎉', '✨', '🌟', '💫', '⭐'][Math.floor(Math.random() * 5)]}
-            </div>
-          ))}
+          {[...Array(30)].map((_, i) => {
+            const icons = [PartyPopper, Sparkles, Star, Zap, Star];
+            const Icon = icons[Math.floor(Math.random() * icons.length)];
+            return (
+              <div
+                key={i}
+                className="absolute animate-confetti"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 0.5}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`
+                }}
+              >
+                <Icon className="w-6 h-6 text-primary" />
+              </div>
+            );
+          })}
         </div>
       )}
 

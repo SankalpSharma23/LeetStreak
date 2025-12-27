@@ -227,29 +227,43 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
             </div>
           )}
           
-          {/* Topic Performance */}
+          {/* Topic Performance List */}
           {topicPerformance && topicPerformance.topics.length > 0 && (
             <div className="bg-surface border border-primary/30 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-2xl">📚</span>
-                <h3 className="font-bold text-sm text-text-main">Recent Activity</h3>
+                <h3 className="font-bold text-sm text-text-main">Topic Performance</h3>
               </div>
               
               <div className="space-y-2">
                 {topicPerformance.topics.slice(0, 5).map((topic, idx) => (
-                  <div key={idx} className="bg-surfaceHover rounded-lg p-2">
+                  <div key={idx} className="bg-surfaceHover rounded-lg p-3">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <span className="text-xs text-text-primary font-medium line-clamp-1 flex-1">
                         {topic.title}
                       </span>
-                      <span className="text-xs font-bold text-accent shrink-0">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        topic.successRate >= 80 ? 'bg-green-500/20 text-green-400' :
+                        topic.successRate >= 50 ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
                         {topic.successRate}%
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-text-muted">
-                      <span>{topic.attempts} attempts</span>
+                      <span>{topic.attempts} problems</span>
                       <span>•</span>
-                      <span>{topic.accepted} accepted</span>
+                      <span>{topic.accepted} solved</span>
+                    </div>
+                    <div className="w-full bg-surfaceHover rounded-full h-1 mt-2 overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${
+                          topic.successRate >= 80 ? 'bg-green-500' :
+                          topic.successRate >= 50 ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{width: `${topic.successRate}%`}}
+                      />
                     </div>
                   </div>
                 ))}
@@ -358,11 +372,11 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
       {/* Detail Modal */}
       {showDetailModal && detailInsight && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto scrollbar-hide"
           onClick={() => setShowDetailModal(false)}
         >
           <div 
-            className="bg-surface border border-primary/30 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-bounce-in"
+            className="bg-surface border border-primary/30 rounded-2xl p-6 max-w-2xl w-full shadow-2xl animate-bounce-in my-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3 mb-4">
@@ -396,23 +410,146 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
               </p>
             </div>
 
+            {/* Performance Metrics Based on Insight Type */}
+            {detailInsight.category === 'Difficulty Preference' && (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-leetcode-easy/10 border border-leetcode-easy/20 rounded-lg p-3">
+                  <div className="text-xs text-text-muted mb-1">Easy</div>
+                  <div className="text-xl font-bold text-leetcode-easy">{userData?.stats?.easy || 0}</div>
+                  <div className="text-[10px] text-text-muted mt-1">{((userData?.stats?.easy || 0) / (userData?.stats?.total || 1) * 100).toFixed(0)}% of total</div>
+                </div>
+                <div className="bg-leetcode-medium/10 border border-leetcode-medium/20 rounded-lg p-3">
+                  <div className="text-xs text-text-muted mb-1">Medium</div>
+                  <div className="text-xl font-bold text-leetcode-medium">{userData?.stats?.medium || 0}</div>
+                  <div className="text-[10px] text-text-muted mt-1">{((userData?.stats?.medium || 0) / (userData?.stats?.total || 1) * 100).toFixed(0)}% of total</div>
+                </div>
+                <div className="bg-leetcode-hard/10 border border-leetcode-hard/20 rounded-lg p-3">
+                  <div className="text-xs text-text-muted mb-1">Hard</div>
+                  <div className="text-xl font-bold text-leetcode-hard">{userData?.stats?.hard || 0}</div>
+                  <div className="text-[10px] text-text-muted mt-1">{((userData?.stats?.hard || 0) / (userData?.stats?.total || 1) * 100).toFixed(0)}% of total</div>
+                </div>
+              </div>
+            )}
+
+            {detailInsight.category === 'Weekly Consistency' && (
+              <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4">
+                <h4 className="text-xs font-semibold text-primary mb-3">📊 Weekly Breakdown</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-text-muted">Target: 5+ days/week</span>
+                    <span className="text-xs font-bold text-primary">Current: Check your calendar</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-text-muted">Streak: {userData?.stats?.streak || 0} days</span>
+                    <span className="text-xs font-bold text-accent">🔥 Keep it going!</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {detailInsight.category === 'Best Solving Days' && (
+              <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-4">
+                <h4 className="text-xs font-semibold text-accent mb-3">📅 Optimize Your Schedule</h4>
+                <p className="text-xs text-text-muted mb-3">
+                  You're most productive at a certain time. Block this time for deep work and problem-solving practice.
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].slice(0, 7).map((day, idx) => (
+                    <div key={idx} className="bg-surface rounded p-2 text-center border border-surfaceHover">
+                      <div className="text-[10px] font-semibold text-text-muted">{day}</div>
+                      <div className="text-xs mt-1 h-6 flex items-center justify-center">
+                        {idx === new Date().getDay() ? '●' : '○'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {detailInsight.category === 'Recent Activity' && (
+              <div className="bg-leetcode-medium/10 border border-leetcode-medium/30 rounded-xl p-4 mb-4">
+                <h4 className="text-xs font-semibold text-leetcode-medium mb-3">🎯 Recent Submissions</h4>
+                {userData?.recentSubmissions && userData.recentSubmissions.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-text-muted">Last 7 days:</span>
+                      <span className="font-bold">{userData.recentSubmissions.filter(sub => {
+                        const subDate = new Date(sub.timestamp * 1000);
+                        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                        return subDate > weekAgo;
+                      }).length} submissions</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-text-muted">Acceptance rate:</span>
+                      <span className="font-bold">{((userData.recentSubmissions.filter(s => s.statusDisplay === 'Accepted').length / userData.recentSubmissions.length) * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-text-muted">No recent activity yet. Start solving problems!</p>
+                )}
+              </div>
+            )}
+
+            {detailInsight.category === 'Achievement Level' && (
+              <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-4">
+                <h4 className="text-xs font-semibold text-accent mb-3">🎖️ Progress Metrics</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-text-muted">Total Solved:</span>
+                    <span className="text-sm font-bold text-accent">{userData?.stats?.total || 0}</span>
+                  </div>
+                  <div className="w-full bg-surfaceHover rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-accent to-primary h-full transition-all"
+                      style={{width: `${Math.min(((userData?.stats?.total || 0) / 1000) * 100, 100)}%`}}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-text-muted">
+                    <span>0</span>
+                    <span>1000 (Master)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* General Tips */}
             {detailInsight.type === 'suggestion' && (
               <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4">
-                <h4 className="text-xs font-semibold text-primary mb-2">💡 Quick Tips</h4>
-                <ul className="text-xs text-text-muted space-y-1">
-                  <li>• Set aside dedicated time for practice</li>
-                  <li>• Focus on understanding, not just solving</li>
-                  <li>• Review your solutions regularly</li>
+                <h4 className="text-xs font-semibold text-primary mb-2">💡 Actionable Tips</h4>
+                <ul className="text-xs text-text-muted space-y-1.5">
+                  <li className="flex gap-2">
+                    <span>✓</span>
+                    <span>Set a daily goal: Complete at least 1 problem every day</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span>✓</span>
+                    <span>Use the problem queue to track what to solve next</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span>✓</span>
+                    <span>Review solutions before moving to the next problem</span>
+                  </li>
                 </ul>
               </div>
             )}
 
             {detailInsight.type === 'achievement' && (
               <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-4">
-                <h4 className="text-xs font-semibold text-accent mb-2">🎉 Keep it up!</h4>
-                <p className="text-xs text-text-muted">
-                  You're making great progress! Consistency is the key to mastering algorithms.
-                </p>
+                <h4 className="text-xs font-semibold text-accent mb-2">🎉 Next Steps</h4>
+                <ul className="text-xs text-text-muted space-y-1.5">
+                  <li className="flex gap-2">
+                    <span>→</span>
+                    <span>Maintain this momentum and consistency</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span>→</span>
+                    <span>Challenge yourself with harder problems</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span>→</span>
+                    <span>Share your progress with friends for motivation</span>
+                  </li>
+                </ul>
               </div>
             )}
             
@@ -420,7 +557,7 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
               onClick={() => setShowDetailModal(false)}
               className="w-full py-3 bg-primary hover:bg-primaryHover text-inverted rounded-xl font-semibold transition-colors"
             >
-              Got it!
+              Close
             </button>
           </div>
         </div>

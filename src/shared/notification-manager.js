@@ -59,7 +59,7 @@ export async function batchNotify(events) {
     return;
   }
   
-  console.log('Storing', events.length, 'notification(s) for popup display');
+  console.log('Processing', events.length, 'notification(s)');
   
   try {
     // Store notifications for popup to display
@@ -77,37 +77,33 @@ export async function batchNotify(events) {
     // Add new notifications
     const updatedNotifications = [...existingNotifications, ...notificationsWithMeta];
     
-    // Keep only notifications from last 24 hours and limit to 10
+    // Keep only notifications from last 24 hours and limit to 20
     const oneDayAgo = timestamp - (24 * 60 * 60 * 1000);
     const recentNotifications = updatedNotifications
       .filter(n => n.timestamp > oneDayAgo)
-      .slice(-10);
+      .slice(-20);
     
     await chrome.storage.local.set({ unread_notifications: recentNotifications });
     
     console.log('✅ Notifications stored successfully for popup display');
     
-    // Also send system notification for first event
-    const message = events.length === 1 
-      ? events[0].message
-      : `${events.length} friends updated their streaks today`;
-    
-    const notificationId = await chrome.notifications.create({
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('icons/icon128.png'),
-      title: 'LeetStreak',
-      message: message,
-      priority: 2,
-      requireInteraction: false
-    });
-    console.log('✅ System notification sent:', notificationId);
-    
-    // Mark friends as notified after successful send
+    // Send individual browser notification for each new submission
     for (const event of events) {
-      await markFriendNotified(event.username);
+      if (event.type === 'new_submission' || event.type === 'milestone') {
+        await chrome.notifications.create({
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+          title: event.type === 'new_submission' ? '🎯 LeetStreak - New Submission!' : '🔥 LeetStreak - Milestone!',
+          message: event.message,
+          priority: 2,
+          requireInteraction: false
+        });
+        console.log('✅ Browser notification sent for:', event.username);
+      }
     }
+    
   } catch (error) {
     console.error('❌ Error sending notification:', error);
-    console.error('Notification details:', { message, eventsCount: events.length });
+    console.error('Notification details:', { eventsCount: events.length });
   }
 }

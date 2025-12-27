@@ -93,7 +93,7 @@ function analyzeConsistency(submissionCalendar) {
       type = 'achievement';
     } else if (activeDays >= 3) {
       message = `${activeDays} days active this week. Try to maintain regular practice! 💪`;
-      icon = '📊';
+      icon = '�';
       type = 'neutral';
     } else {
       message = `Only ${activeDays} active days this week. Let's get back on track! 🎯`;
@@ -140,7 +140,7 @@ function analyzeBestDays(submissionCalendar) {
     
     return {
       message,
-      icon: '📈',
+      icon: '�',
       type: 'neutral',
       category: 'Best Solving Days'
     };
@@ -169,11 +169,11 @@ function analyzeRecentTrend(recentSubmissions) {
     icon = '🚀';
     type = 'achievement';
   } else if (recentCount >= 2) {
-    message = `Good momentum with ${recentCount} recent submissions! Keep going! 💪`;
+    message = `Good momentum with ${recentCount} recent submissions! Keep going! �`;
     icon = '⚡';
     type = 'neutral';
   } else if (recentCount === 1) {
-    message = `Getting started! Let's build that momentum! 🎯`;
+    message = `Getting started! Let's build that momentum! �`;
     icon = '💡';
     type = 'suggestion';
   } else {
@@ -193,7 +193,7 @@ function analyzePotential(stats) {
   let message, icon, type;
   
   if (total >= 1000) {
-    message = `LeetCode Master! Over ${total} problems solved! You're in the elite club! 👑`;
+    message = `LeetCode Master! Over ${total} problems solved! You're in the elite club! �`;
     icon = '👑';
     type = 'achievement';
   } else if (total >= 500) {
@@ -201,8 +201,8 @@ function analyzePotential(stats) {
     icon = '🎖️';
     type = 'achievement';
   } else if (total >= 100) {
-    message = `Century club member! ${total} problems solved and counting! 💯`;
-    icon = '💯';
+    message = `Century club member! ${total} problems solved and counting! �`;
+    icon = '�';
     type = 'achievement';
   } else if (total >= 50) {
     message = `Great progress! ${total} problems down. Next milestone: 100! 📊`;
