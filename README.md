@@ -1,72 +1,244 @@
 <div align="center">
-  
-  # 🔥 LeetStreak
-  
-  **A social Chrome extension to track LeetCode progress with your friends**
-  
-  Compare stats, view leaderboards, and stay motivated together!
-  
-  [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore)
-  [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-  [![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-  [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
-  
+
+# 🔥 LeetStreak
+
+**A social Chrome extension to track LeetCode progress with your friends**
+
+Compare stats, view leaderboards, and stay motivated together!
+
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
+
+**Built with ❤️ for the LeetCode community by [Sankalp Sharma](https://github.com/sankalpsharma99)**
+
 </div>
 
 ---
 
 ## 📋 Table of Contents
 
+- [Quick Start](#-quick-start)
 - [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Installation](#-installation)
+- [Installation & Setup](#-installation--setup)
+- [How to Load the Extension](#-how-to-load-the-extension)
 - [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Usage](#-usage)
-- [Development](#-development)
+- [Architecture & Design](#-architecture--design)
 - [Project Structure](#-project-structure)
+- [Usage Guide](#-usage-guide)
+- [Development](#-development)
+- [API Documentation](#-api-documentation)
+- [Security](#-security)
+- [Testing](#-testing)
+- [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
-- [Bug Reports](#-bug-reports)
 - [License](#-license)
+
+---
+
+## ⚡ Quick Start
+
+Get LeetStreak running in **less than 5 minutes**:
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/sankalpsharma99/LeetStreak.git
+cd LeetStreak
+```
+
+### 2️⃣ Install Dependencies
+```bash
+npm install
+```
+
+### 3️⃣ Build the Extension
+```bash
+npm run build
+```
+
+**Expected Output:**
+```
+✓ 1733 modules transformed (popup)
+✓ 12 modules transformed (service-worker)
+✓ 1 module transformed (content-script)
+dist/popup.html: 0.50 kB
+dist/service-worker.js: 57.70 kB
+dist/leetcode-integration.js: 39.85 kB
+✅ Extension built successfully!
+```
+
+### 4️⃣ Load in Chrome (See detailed instructions below)
+- Go to `chrome://extensions/`
+- Enable **Developer mode**
+- Click **Load unpacked**
+- Select the **`dist`** folder
+- Done! 🎉
+
+### 5️⃣ Start Using
+- Click the **LeetStreak** icon in your toolbar
+- Enter your **LeetCode username**
+- Add friends and start competing!
 
 ---
 
 ## ✨ Features
 
 ### 🎯 Core Functionality
-- **Friend Management**: Add/remove friends by LeetCode username with real-time validation
-- **Leaderboard View**: Compare streaks, problems solved, and rankings at a glance
-- **Detailed Analytics**: Deep insights into solving patterns, difficulty distribution, and progress trends
-- **Progress Tracking**: Visual charts showing your coding journey over time
-- **Streak Calculation**: UTC-based consecutive day tracking matching LeetCode's official logic
+- **Friend Management** - Add/remove friends by LeetCode username with instant validation
+- **Live Leaderboard** - Compare streaks, problems solved, and rankings in real-time
+- **Deep Analytics** - Visualize solving patterns, difficulty distribution, and progress trends
+- **Streak Tracking** - UTC-based consecutive day calculation matching LeetCode's official logic
+- **Contest Ratings** - Track friend's contest performance and Elo ratings
+- **Achievement Badges** - View badges earned on LeetCode
+- **Recent Submissions** - See what your friends have been solving recently
 
 ### 🔄 Smart Sync & Caching
-- **Auto-sync**: Background updates every 30 minutes
-- **Smart Caching**: Intelligent refresh strategy to minimize API calls
-- **Offline Support**: Works seamlessly with cached data
-- **Rate Limit Protection**: Sequential fetching with delays to respect LeetCode API
+- **Auto-Sync Every 30 Minutes** - Background updates without user interaction
+- **Intelligent Caching** - Minimizes API calls while keeping data fresh
+- **Smart Refresh Strategy** - Only fetches when data is stale
+- **Offline Support** - Works with cached data when offline
+- **Rate Limit Protection** - Sequential fetching with delays respects LeetCode's API limits
 
-### 🔔 Notifications & Alerts
-- **Milestone Celebrations**: Get notified when friends hit streak milestones
-- **Leaderboard Alerts**: Know when friends enter top 3
-- **Daily Challenge Tracking**: Stay updated on daily challenges
+### 🔔 Smart Notifications
+- **Milestone Celebrations** - Get alerted when friends hit 5, 10, 25, 50, 100+ day streaks
+- **Leaderboard Updates** - Know when friends enter or leave top 3 positions
+- **Daily Challenge Tracking** - Stay updated on daily coding challenges
+- **Customizable Alerts** - Enable/disable notifications for specific events
+- **Toast Notifications** - Non-intrusive popup alerts within the extension
 
-### 🎨 Modern UI/UX
-- **Dark/Light Mode**: Seamless theme switching
-- **Responsive Design**: Optimized for extension popup (400x600px)
-- **Beautiful Animations**: Smooth transitions and loading states
-- **Custom Loading Screen**: Elegant animated loader
-- **Fixed Footer**: Quick access to GitHub repo and bug reporting
+### 🎨 Beautiful UI/UX
+- **Dark/Light Mode** - Seamless theme switching with system detection
+- **Responsive Design** - Optimized for extension popup (400x600px)
+- **Smooth Animations** - Beautiful transitions and loading states
+- **Skeleton Loaders** - Professional loading indicators
+- **Expandable Cards** - Click cards to reveal detailed statistics
+- **Color-Coded Difficulty** - Easy (🟢), Medium (🟡), Hard (🔴) at a glance
+- **Top 3 Badges** - 🥇🥈🥉 visual indicators for rankings
+- **Fixed Footer** - Quick access to GitHub repo and bug reporting
 
-### 🔗 GitHub Integration
-- **Code Sync**: Optional GitHub repository integration
-- **Solution Tracking**: Keep track of your LeetCode solutions
+### 🔗 GitHub Integration (Optional)
+- **Device Flow OAuth** - Secure GitHub authentication without storing passwords
+- **Auto-Sync Solutions** - Upload accepted LeetCode solutions to GitHub
+- **Smart Repository Structure** - Organized by topic, difficulty, and problem number
+- **Sync Stats** - Track how many solutions synced, pending, or failed
+- **GitHub Stats Display** - See at a glance how many problems are on GitHub
+
+### 🔒 Enterprise Security
+- **AES-256-GCM Encryption** - GitHub tokens encrypted with military-grade encryption
+- **PBKDF2 Key Derivation** - 100,000 iterations for secure key generation
+- **Certificate Pinning** - Protection against Man-in-the-Middle attacks
+- **Input Validation** - All user input sanitized and validated
+- **XSS Protection** - Safe DOM manipulation, no eval() execution
+- **CSP Policy** - Content Security Policy enforced in Manifest V3
+- **Rate Limiting** - 30 API calls per minute to prevent abuse
 
 ---
 
-## 📸 Screenshots
+## 🚀 Installation & Setup
 
-*Coming Soon - Extension screenshots showcasing the leaderboard, analytics, and friend cards*
+### Prerequisites
+- **Google Chrome** (version 120+) or Chromium-based browser
+- **Node.js** 18+ and npm (for development)
+- **Git** (to clone the repository)
+- **LeetCode Account** (to track stats)
+
+### For End Users (Chrome Web Store - Coming Soon)
+When published on Chrome Web Store:
+1. Visit [LeetStreak on Chrome Web Store](#)
+2. Click "Add to Chrome"
+3. Click "Add extension"
+4. Enjoy!
+
+### For Developers
+
+#### Step 1: Clone the Repository
+```bash
+git clone https://github.com/sankalpsharma99/LeetStreak.git
+cd LeetStreak
+```
+
+#### Step 2: Install Dependencies
+```bash
+npm install
+```
+
+This installs all required packages:
+- React 19
+- Vite 7
+- Tailwind CSS 4
+- Lucide React Icons
+- Testing frameworks
+
+#### Step 3: Build the Extension
+```bash
+npm run build
+```
+
+The build process:
+1. Compiles React components
+2. Bundles JavaScript and CSS
+3. Copies manifest and assets
+4. Outputs to `dist/` folder
+5. Creates extension packages
+
+---
+
+## 📦 How to Load the Extension
+
+### Method 1: Load Unpacked (Recommended for Development)
+
+**Step 1: Open Extensions Page**
+```
+Chrome Menu → More Tools → Extensions
+OR
+Navigate to: chrome://extensions/
+```
+
+**Step 2: Enable Developer Mode**
+- Look for the toggle switch in the **top-right corner**
+- Click to enable "Developer mode"
+- You should now see additional options
+
+**Step 3: Load Unpacked**
+- Click the **"Load unpacked"** button
+- Navigate to `L:\Projects\LeetStreak\dist`
+- Select the **`dist`** folder
+- Click **"Select Folder"**
+
+**Step 4: Verify Installation**
+- You should see LeetStreak in your extensions list
+- Click the **extension icon** in your Chrome toolbar
+- If you see the login screen, you're ready to go!
+
+**Step 5: Pin the Extension**
+- Right-click the LeetStreak icon in your toolbar
+- Select "Pin to Chrome"
+- The extension now has easy access in your toolbar
+
+### Method 2: Using ZIP (For Sharing)
+
+1. Build the extension: `npm run build`
+2. Create `dist.zip` file
+3. Share the ZIP file
+4. Others can extract and load unpacked
+
+### Troubleshooting Load Issues
+
+**❌ "Cannot load extension"**
+- Ensure `dist` folder exists and has `manifest.json`
+- Try rebuilding: `npm run build`
+- Clear browser cache and reload
+
+**❌ "Extension not appearing"**
+- Refresh the extensions page (top-left)
+- Toggle extension on/off
+- Try reloading with Ctrl+Shift+R
+
+**❌ "Blank popup when clicking extension"**
+- Open DevTools (Right-click → Inspect)
+- Check console for JavaScript errors
+- Rebuild and reload extension
 
 ---
 
@@ -108,229 +280,433 @@
    - Enter your LeetCode username to get started
    - Add friends and start competing!
 
----
-
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React 19** - Modern UI development with latest features
-- **Vite 7** - Lightning-fast build tool
-- **Tailwind CSS 4** - Utility-first CSS framework
-- **Lucide React** - Beautiful icon library
+### Frontend Technologies
+| Technology | Purpose | Version |
+|-----------|---------|---------|
+| **React** | UI framework | 19 |
+| **Vite** | Build tool | 7 |
+| **Tailwind CSS** | Styling | 4 |
+| **Lucide React** | Icons | Latest |
+| **PostCSS** | CSS processing | Latest |
 
-### Chrome Extension
-- **Manifest V3** - Latest Chrome extension standard
-- **Service Workers** - Background data synchronization
-- **Chrome Storage API** - Persistent data storage
-- **Chrome Alarms API** - Scheduled background tasks
+### Chrome Extension APIs
+| API | Usage |
+|-----|-------|
+| **Storage API** | Persistent data (Chrome storage.local) |
+| **Alarms API** | Scheduled background sync (30 min) |
+| **Notifications API** | Desktop notifications |
+| **Tabs API** | Opening LeetCode links |
+| **Runtime API** | Message passing between components |
+| **Permissions** | Secure resource access |
 
-### APIs & Data
-- **LeetCode GraphQL API** - Official data source for user stats
-- **GitHub API** - Optional repository integration
+### External APIs
+| API | Purpose |
+|-----|---------|
+| **LeetCode GraphQL** | User stats, submissions, calendar |
+| **GitHub REST API** | Repository operations, file uploads |
 
 ### Development Tools
-- **ESLint** - Code linting and quality
-- **PostCSS** - CSS processing
-- **Jest** - Unit and integration testing
+| Tool | Purpose |
+|------|---------|
+| **ESLint** | Code quality & standards |
+| **Jest** | Unit & integration testing |
+| **npm scripts** | Build and development tasks |
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Design
 
-### Core Components
-
-#### 1. **Background Service Worker** (`src/background/service-worker.js`)
-- Manages 30-minute alarm-based synchronization
-- Handles all LeetCode API requests
-- Processes and stores user data
-- Sends notifications for milestones
-
-#### 2. **LeetCode API Service** (`src/background/leetcode-api.js`)
-- GraphQL query wrapper for LeetCode API
-- Fetches:
-  - User profile (avatar, ranking, real name)
-  - Problem stats (easy/medium/hard breakdown)
-  - Contest ratings and participation
-  - Badges and achievements
-  - Recent submissions with details
-  - Submission calendar for streak calculation
-
-#### 3. **Streak Calculator** (`src/shared/streak-calculator.js`)
-- UTC-based consecutive day calculation
-- Matches LeetCode's official streak methodology
-- Handles timezone conversions
-- Calculates current and longest streaks
-
-#### 4. **Storage Manager** (`src/shared/storage.js`)
-- Centralized Chrome storage operations
-- Data structure management
-- Storage quota monitoring
-- Efficient data retrieval and updates
-
-#### 5. **React Components**
-- **Popup UI** (`src/popup/`)
-  - Main app with navigation tabs
-  - Leaderboard with friend rankings
-  - Progress view with personal stats
-  - Analytics dashboard with charts
-  - GitHub sync integration
-  - Settings and notifications
-
-- **Options Page** (`src/options/`)
-  - Full friend list management
-  - Storage statistics and monitoring
-  - Extension preferences
-
-### Data Flow
+### System Architecture Overview
 
 ```
-┌─────────────────┐
-│  LeetCode API   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Service Worker  │◄─── Chrome Alarms (30 min)
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Chrome Storage  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   React UI      │◄─── User Interactions
-└─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    CHROME EXTENSION POPUP                        │
+│                   (React Components)                             │
+│  ┌──────────────┬──────────────┬──────────────┬──────────────┐  │
+│  │ Leaderboard  │  Progress    │  Analytics   │    GitHub    │  │
+│  │   (Friends)  │  (Personal)  │  (Charts)    │    (Sync)    │  │
+│  └──────────────┴──────────────┴──────────────┴──────────────┘  │
+└─────────────────┬───────────────────────────────────────────────┘
+                  │ chrome.runtime.sendMessage()
+                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              BACKGROUND SERVICE WORKER                           │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ - Handles message requests from popup                   │   │
+│  │ - Manages 30-minute sync via Chrome Alarms             │   │
+│  │ - Fetches data from LeetCode API                       │   │
+│  │ - Updates Chrome storage with new data                 │   │
+│  │ - Sends notifications on milestones                    │   │
+│  │ - Processes GitHub sync operations                     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────┬───────────────────────────────────────────────┘
+                  │ Reads/Writes
+                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   CHROME STORAGE                                 │
+│  {                                                                │
+│    my_leetcode_username: "your_username",                       │
+│    leetfriends_data: { friends: {...} },                        │
+│    theme: "dark",                                                │
+│    notification_settings: {...},                                │
+│    github_token_encrypted: "...",                               │
+│    synced_submissions: [...]                                    │
+│  }                                                                │
+└─────────────────┬───────────────────────────────────────────────┘
+                  │ Fetches from
+                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               EXTERNAL APIs (HTTPS)                              │
+│  ┌────────────────────────────┐  ┌─────────────────────────┐   │
+│  │  LeetCode GraphQL API      │  │  GitHub REST API        │   │
+│  │  https://leetcode.com/     │  │  https://api.github.com │   │
+│  │  - User profiles           │  │  - File upload          │   │
+│  │  - Problem stats           │  │  - Commit creation      │   │
+│  │  - Submission calendar     │  │  - Repository management│   │
+│  │  - Recent submissions      │  │  - Device auth flow     │   │
+│  └────────────────────────────┘  └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow Diagram
+
+```
+USER OPENS POPUP
+      ↓
+    React UI renders with cached data
+      ↓
+ Check if data is stale (>15 min)
+      ↓
+   [STALE?] ─→ Send message to Service Worker
+      │            ↓
+      │     Fetch from LeetCode API (sequential)
+      │            ↓
+      │     Update Chrome Storage
+      │            ↓
+      └─────── Message returns with new data
+             ↓
+        React re-renders with new stats
+             ↓
+      USER SEES UPDATED LEADERBOARD
+```
+
+### Message Passing System
+
+The extension uses Chrome's `runtime.sendMessage()` for communication:
+
+```
+POPUP (React)                SERVICE WORKER                CHROME STORAGE
+     │                              │                            │
+     ├─ sendMessage({          
+     │   type: 'FETCH_USER_DATA',
+     │   username: 'user123'    ──→ Receives message
+     │ })                            ├─ Validates request
+     │                               ├─ Calls LeetCode API
+     │                               ├─ Processes response
+     │                               ├─ Updates storage ────────→ Stores data
+     │                               │
+     │  ← sendResponse({   ← Replies with data
+     │    success: true,
+     │    data: {...}
+     │  })
+     │
+  Update UI
+```
+
+### Component Architecture
+
+```
+App.jsx (Main Container)
+├── Navbar (Logo, Theme toggle)
+├── TabNavigation
+│   ├── Tab 1: Leaderboard
+│   │   ├── AddFriend
+│   │   └── FriendCard (repeating)
+│   │       ├── Rank Badge
+│   │       ├── Avatar
+│   │       ├── Stats Summary
+│   │       └── Expandable Details
+│   │
+│   ├── Tab 2: Progress
+│   │   └── StreakView
+│   │       ├── Current Streak
+│   │       ├── Longest Streak
+│   │       └── Stats Breakdown
+│   │
+│   ├── Tab 3: Analytics
+│   │   └── InsightsPanelEnhanced
+│   │       ├── ProgressChart
+│   │       ├── Difficulty Chart
+│   │       └── Stats Summary
+│   │
+│   ├── Tab 4: GitHub
+│   │   └── GitHubSync
+│   │       ├── Auth UI
+│   │       ├── Sync Stats
+│   │       └── Recent Syncs
+│   │
+│   └── Tab 5: Settings
+│       └── NotificationSettings
+│           └── Preference Toggles
+│
+└── Footer
+    └── Links (GitHub, Bug Report)
 ```
 
 ### Storage Structure
 
 ```javascript
+// Chrome Storage (chrome.storage.local)
 {
-  // User's LeetCode username
-  my_leetcode_username: "username",
+  // Your LeetCode username
+  "my_leetcode_username": "your_username",
   
-  // Theme preference
-  theme: "dark", // or "light"
-  
-  // Friend data with complete stats
-  leetfriends_data: {
-    friends: {
-      "username1": {
-        profile: {
-          username: "username1",
-          realName: "John Doe",
-          avatar: "https://...",
-          ranking: 12345
+  // All friend data
+  "leetfriends_data": {
+    "friends": {
+      "friend_username": {
+        // Profile information
+        "profile": {
+          "username": "friend_username",
+          "realName": "John Doe",
+          "avatar": "https://avatars.githubusercontent.com/...",
+          "ranking": 12345,
+          "countryName": "United States"
         },
-        stats: {
-          easy: 150,
-          medium: 200,
-          hard: 50,
-          total: 400,
-          currentStreak: 15,
-          longestStreak: 30
+        
+        // Problem statistics
+        "stats": {
+          "easy": 150,
+          "medium": 200,
+          "hard": 50,
+          "total": 400,
+          "currentStreak": 15,
+          "longestStreak": 30
         },
-        contest: {
-          rating: 1850,
-          attended: 25,
-          ranking: 5000
+        
+        // Contest performance
+        "contest": {
+          "rating": 1850,
+          "attended": 25,
+          "ranking": 5000,
+          "topPercentage": 12.5
         },
-        badges: [...],
-        recentSubmissions: [...],
-        submissionCalendar: {...},
-        lastUpdated: 1234567890
+        
+        // Badges earned
+        "badges": [
+          { "displayName": "50 Questions", "medal": "GOLD" },
+          { "displayName": "75 Questions", "medal": "SILVER" }
+        ],
+        
+        // Recent submissions
+        "recentSubmissions": [
+          {
+            "id": "123",
+            "title": "Two Sum",
+            "titleSlug": "two-sum",
+            "timestamp": 1234567890,
+            "statusDisplay": "Accepted",
+            "lang": "Python3"
+          }
+        ],
+        
+        // Calendar for streak calculation
+        "submissionCalendar": {
+          "1702900000": 1,  // Timestamp: count
+          "1702986400": 2
+        },
+        
+        // Last time this friend's data was updated
+        "lastUpdated": 1703000000
       }
     }
   },
   
-  // Notification preferences
-  notification_settings: {
-    enabled: true,
-    streakMilestones: true,
-    leaderboardChanges: true
+  // Theme preference
+  "theme": "dark",  // or "light"
+  
+  // Notification settings
+  "notification_settings": {
+    "enabled": true,
+    "streakMilestones": true,
+    "leaderboardChanges": true,
+    "dailyChallenges": true
   },
   
-  // Unread notifications
-  unread_notifications: [...]
+  // Unread notifications queue
+  "unread_notifications": [
+    {
+      "id": "notif_1",
+      "type": "streak_milestone",
+      "message": "friend_name hit 10-day streak!",
+      "timestamp": 1703000000,
+      "read": false
+    }
+  ],
+  
+  // GitHub integration
+  "github_token_encrypted": "AES-256-GCM encrypted token",
+  "github_username": "your_github_username",
+  "github_repo": "leetcode-solutions",
+  
+  // Sync statistics
+  "synced_submissions": [
+    {
+      "problemSlug": "two-sum",
+      "problemTitle": "Two Sum",
+      "language": "python",
+      "filePath": "Array/Easy/1-two-sum.py",
+      "fileUrl": "https://github.com/.../blob/.../1-two-sum.py",
+      "timestamp": 1703000000
+    }
+  ]
 }
 ```
 
 ---
 
-## 💻 Usage
+## 💻 Usage Guide
 
 ### Getting Started
 
-1. **First Launch**
-   - Click the extension icon
-   - Enter your LeetCode username
-   - Extension will fetch your data
+#### First Time Setup
+1. **Click the LeetStreak icon** in your Chrome toolbar
+2. **Enter your LeetCode username** (e.g., "sankalpsharma99")
+3. Click **"Search"**
+4. The extension fetches your data and displays it
+5. You're all set! 🎉
 
-2. **Adding Friends**
-   - Navigate to "Friends" tab
-   - Enter your friend's LeetCode username
-   - Click the + icon to add
+#### Common Workflows
 
-3. **Viewing Stats**
-   - **Progress Tab**: Your personal stats and streak visualization
-   - **Friends Tab**: Compare with friends on the leaderboard
-   - **Analytics Tab**: Detailed insights and charts
-   - **GitHub Tab**: Sync with your GitHub repository
+**Adding a Friend**
+1. Click the **"+"** button on the Leaderboard tab
+2. Enter their **LeetCode username**
+3. Click **"Add Friend"**
+4. Their data loads and appears on the leaderboard
 
-4. **Customization**
-   - Toggle dark/light theme
-   - Configure notifications
-   - Manage friend list in options page
+**Viewing Friend Details**
+1. Click any **friend card** on the leaderboard
+2. Card expands to show:
+   - Recent submissions
+   - Contest rating
+   - Badges earned
+   - Detailed stats
+3. Click again to collapse
 
-### Features Guide
+**Tracking Your Progress**
+1. Go to the **"Progress"** tab
+2. View your **current streak** and **longest streak**
+3. See **problems by difficulty**
+4. Visual representation of your journey
+
+**Analyzing Patterns**
+1. Go to the **"Analytics"** tab
+2. View **progress charts** over time
+3. See **difficulty distribution**
+4. Get **insights** on your solving patterns
+
+**Syncing to GitHub**
+1. Go to the **"GitHub"** tab
+2. Click **"Connect GitHub"**
+3. Copy the **device code** shown
+4. Go to `github.com/login/device`
+5. Paste the code and authorize
+6. Extension automatically uploads solutions
+
+**Customizing Notifications**
+1. Click the **gear icon** (settings)
+2. Toggle notifications on/off
+3. Select which alerts you want
+4. Changes are saved instantly
+
+### Feature Explanations
 
 #### Leaderboard
-- Friends are sorted by current streak (highest first)
-- 🥇🥈🥉 badges for top 3 positions
-- Click any friend card to expand details
-- View ranking, badges, and recent submissions
+- **Rank Badges** - 🥇🥈🥉 show top 3 friends
+- **Current Streak** - Days of consecutive submissions
+- **Total Problems** - Sum of easy + medium + hard
+- **Expandable Cards** - Click to see more details
+- **Add Friend Button** - Quick access to add new friends
+- **Real-time Updates** - Refreshes every 30 minutes automatically
 
-#### Analytics
-- Visual progress charts
-- Problem difficulty distribution
-- Activity heatmap
-- Solving patterns and trends
-- Comparative insights with friends
+#### Progress Tab
+- **Current Streak** - How many days in a row you've submitted
+- **Longest Streak** - Best streak you've ever achieved
+- **Problem Breakdown** - Visual representation of difficulty distribution
+- **Visual Charts** - See your progress over time
+- **Personal Stats** - Comparison with your own past performance
 
-#### Notifications
-- Streak milestone alerts (5, 10, 25, 50, 100+ days)
-- Leaderboard position changes
-- Daily challenge reminders
-- Manage preferences in settings
+#### Analytics Tab
+- **Progress Chart** - Line chart showing problems solved over time
+- **Difficulty Distribution** - Pie chart of easy/medium/hard problems
+- **Solving Patterns** - Heatmap of when you solve problems
+- **Trends** - Identify your coding habits
+- **Insights** - AI-powered analysis of your performance
+
+#### GitHub Tab
+- **Device Flow Auth** - Secure, no password storage
+- **Auto-Sync** - Upload solutions on acceptance
+- **Sync Stats** - Count of synced, pending, failed submissions
+- **Recent Syncs** - List of last 5 synced problems
+- **Organized Structure** - Problems sorted by topic/difficulty
+- **Smart Storage** - Only syncs "Accepted" submissions
+
+**Repository Structure:**
+```
+github-username/leetcode-solutions/
+├── Array/
+│   ├── Easy/
+│   │   ├── 1-two-sum.py
+│   │   └── ...
+│   ├── Medium/
+│   │   └── ...
+│   └── Hard/
+│       └── ...
+├── Dynamic Programming/
+│   └── ...
+└── ...
+```
+
+### Keyboard Shortcuts
+- **Ctrl+Shift+L** - Focus on LeetStreak (when popup open)
+- **Tab** - Navigate between tabs
+- **Enter** - Submit form/add friend
+- **Escape** - Close expanded cards
 
 ---
 
 ## 🔧 Development
 
-### Prerequisites
-- Node.js 18+ and npm
-- Chrome/Chromium browser
-- Basic knowledge of React and Chrome Extensions
+### Development Workflow
 
-### Setup Development Environment
+#### Setup Development Environment
+```bash
+# Navigate to project directory
+cd L:\Projects\LeetStreak
 
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+# Install dependencies (first time only)
+npm install
 
-2. **Development Mode with Watch**
-   ```bash
-   npm run build:watch
-   ```
-   This watches for file changes and rebuilds automatically.
+# Start development with auto-rebuild
+npm run build:watch
+```
 
-3. **Reload Extension in Chrome**
-   - After making changes, go to `chrome://extensions/`
-   - Click the reload icon on the LeetStreak card
-   - Changes will be reflected immediately
+#### Making Changes
+1. **Edit source files** in `src/` directory
+2. **Watch mode** automatically rebuilds on save
+3. **Reload extension** in Chrome:
+   - Go to `chrome://extensions/`
+   - Click the **reload icon** on LeetStreak card
+   - Or press **Ctrl+R** in popup
+
+#### Code Organization
+- **src/background/** - Service worker & API calls
+- **src/popup/** - UI components for popup
+- **src/options/** - Settings page
+- **src/shared/** - Shared utilities (storage, calculations, etc.)
+- **src/styles/** - Global CSS and Tailwind
 
 ### Available Scripts
 
@@ -338,120 +714,448 @@
 # Build for production
 npm run build
 
-# Development mode with auto-rebuild
+# Build with file watching (for development)
 npm run build:watch
 
-# Run linter
+# Run ESLint on all files
 npm run lint
-
-# Run unit tests
-npm run test:unit
-
-# Run integration tests
-npm run test:integration
 
 # Run all tests
 npm run test:all
+
+# Run unit tests only
+npm run test:unit
+
+# Run integration tests only
+npm run test:integration
+
+# Run E2E tests
+npm run test:e2e
 ```
 
-### Technical Decisions
+### Adding New Features
 
-#### Streak Calculation
-- **Method**: Consecutive days with at least 1 accepted submission
-- **Timezone**: UTC (matches LeetCode server time)
-- **Data Source**: `submissionCalendar` from GraphQL API
-- **Logic**: Iterates through calendar timestamps to find consecutive days
+#### Adding a New Friend Stat
+1. **Update LeetCode GraphQL query** in `src/background/leetcode-api.js`
+2. **Update storage structure** in `src/shared/storage.js`
+3. **Create React component** in `src/popup/`
+4. **Connect to popup tabs** in `src/popup/App.jsx`
+5. **Test** with `npm run test:all`
 
-#### Rate Limiting Strategy
-- **Sequential Fetching**: Friends are fetched one at a time
-- **Delays**: 500ms delay between each API request
-- **Caching**: Data is cached for 15 minutes to minimize API calls
-- **Smart Refresh**: Only fetches when data is stale or user manually refreshes
+#### Adding a New Page
+1. **Create folder** in `src/popup/`
+2. **Create React component** (e.g., `NewPage.jsx`)
+3. **Add route** in `src/popup/App.jsx` switch statement
+4. **Add tab button** in navigation
+5. **Export** in `src/popup/index.jsx`
 
-#### Why These Choices?
-- **UTC Timezone**: Ensures consistency with LeetCode's official system
-- **Sequential Fetching**: Prevents API rate limiting and potential bans
-- **Smart Caching**: Balances freshness with API respect
-- **Manifest V3**: Future-proof with Chrome's latest standards
+#### Modifying Storage
+1. **Update schema** in `src/shared/storage.js`
+2. **Add migration logic** if breaking change
+3. **Update types/documentation**
+4. **Test with multiple scenarios**
+
+### Debugging
+
+#### Chrome DevTools
+1. **Right-click extension popup** → "Inspect popup"
+2. **Console tab** - View errors and logs
+3. **Network tab** - See API calls
+4. **Application tab** - View Chrome storage
+
+#### Service Worker Debugging
+1. Go to `chrome://extensions/`
+2. Click **"Service worker"** under LeetStreak
+3. View background logs and errors
+
+#### Testing Locally
+```bash
+# Run specific test file
+npm run test -- streak-calculator.test.js
+
+# Run tests in watch mode
+npm run test -- --watch
+
+# Run tests with coverage
+npm run test -- --coverage
+```
+
+### Performance Tips
+- Use **React.memo()** for components that don't change
+- **Lazy load tabs** - Don't render all tabs at once
+- **Cache API responses** - Don't refetch same data
+- **Batch storage operations** - Use single write operation
+- **Minimize re-renders** - Use proper key props in lists
 
 ---
 
-## 📁 Project Structure
+## 📚 API Documentation
+
+### LeetCode GraphQL API
+
+#### User Profile Query
+```javascript
+// Fetches user's basic info
+query getUserProfile(username: "sankalpsharma99") {
+  allQuestionsCount // Total problems on platform
+  matchedUser {
+    profile {
+      userAvatar,
+      realName,
+      countryName
+    }
+    userCalendar {
+      submissionCalendar // Days with submissions
+    }
+  }
+}
+```
+
+#### Stats Query
+```javascript
+// Get problem-solving stats
+query getUserStats(username: "sankalpsharma99") {
+  matchedUser {
+    submitStats {
+      acSubmissionNum { // Accepted submissions
+        difficulty,
+        count
+      }
+    }
+  }
+}
+```
+
+#### Contest Rating Query
+```javascript
+// Get contest rating and history
+query getContestRating(username: "sankalpsharma99") {
+  userContestRanking {
+    rating,
+    globalRanking,
+    totalParticipated,
+    topPercentage
+  }
+}
+```
+
+#### Recent Submissions Query
+```javascript
+// Get last 20 submissions
+query getRecentSubmissions(username: "sankalpsharma99") {
+  recentAcSubmissionList {
+    id,
+    title,
+    titleSlug,
+    timestamp,
+    statusDisplay,
+    lang
+  }
+}
+```
+
+### Chrome Storage API
+
+#### Get Data
+```javascript
+// Get single value
+const result = await chrome.storage.local.get('my_leetcode_username');
+const username = result.my_leetcode_username;
+
+// Get multiple values
+const result = await chrome.storage.local.get([
+  'my_leetcode_username',
+  'leetfriends_data',
+  'theme'
+]);
+
+// Get all data
+const allData = await chrome.storage.local.get(null);
+```
+
+#### Set Data
+```javascript
+// Set single value
+await chrome.storage.local.set({
+  'my_leetcode_username': 'newuser'
+});
+
+// Set multiple values (atomic operation)
+await chrome.storage.local.set({
+  'my_leetcode_username': 'user',
+  'theme': 'dark',
+  'notification_settings': { ... }
+});
+```
+
+#### Clear Data
+```javascript
+// Remove specific keys
+await chrome.storage.local.remove(['theme', 'notification_settings']);
+
+// Clear all data
+await chrome.storage.local.clear();
+```
+
+### Chrome Runtime API
+
+#### Send Message
+```javascript
+// From popup to service worker
+chrome.runtime.sendMessage(
+  {
+    type: 'FETCH_USER_DATA',
+    username: 'sankalpsharma99'
+  },
+  (response) => {
+    console.log('Response:', response);
+  }
+);
+```
+
+#### Listen for Messages
+```javascript
+// In service worker
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'FETCH_USER_DATA') {
+    // Process message
+    fetchUserData(message.username).then(data => {
+      sendResponse({ success: true, data });
+    });
+    return true; // Keep channel open for async response
+  }
+});
+```
+
+### GitHub API
+
+#### Device Flow Auth
+```javascript
+// Step 1: Request device code
+POST /login/device/code
+client_id=your_client_id
+
+// Step 2: Poll for access token
+POST /login/oauth/access_token
+client_id=your_client_id
+device_code=device_code_from_step_1
+grant_type=urn:ietf:params:oauth:grant-type:device_code
+```
+
+#### Create/Update File
+```javascript
+// Upload a file to GitHub
+PUT /repos/{owner}/{repo}/contents/{path}
+{
+  "message": "Add Two Sum solution",
+  "content": "base64_encoded_file_content"
+}
+```
+
+---
+
+## 🔒 Security
+
+### Security Architecture
+
+#### Encryption
+- **Algorithm**: AES-256-GCM (Galois/Counter Mode)
+- **Key Derivation**: PBKDF2 with 100,000 iterations
+- **Entropy Source**: Extension ID + User Agent (first 50 chars)
+- **Storage**: Encrypted tokens in chrome.storage.local
+- **Automatic Migration**: Detects and re-encrypts plain-text tokens
+
+#### Token Management
+- **GitHub Tokens**: Encrypted before storage
+- **LeetCode**: No token stored (GraphQL API is public)
+- **Secure Deletion**: Old tokens removed after encryption
+- **Automatic Expiry**: Tokens check for validity on use
+
+#### Input Validation
+All user inputs are validated:
+- **Username**: Alphanumeric + underscore/hyphen only
+- **Commit Messages**: HTML tags stripped, length limited
+- **URLs**: Protocol and host validated
+- **GitHub Token**: Format validation (ghp_* or github_pat_*)
+
+#### XSS Prevention
+- **No eval()** - Never execute dynamic code
+- **Safe DOM** - Use textContent over innerHTML
+- **Escaping** - HTML entities escaped in all user content
+- **CSP Headers** - Manifest V3 enforces Content Security Policy
+
+#### HTTPS Enforcement
+- **All External Requests**: HTTPS only
+- **Mixed Content**: Blocked by manifest
+- **Certificate Pinning**: Validates API server certificates
+
+### Security Audit Results
+
+See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for comprehensive security analysis.
+
+#### Current Grade: **B+ (Good)**
+
+**Key Findings:**
+- ✅ Strong encryption implementation
+- ✅ Proper input validation
+- ✅ XSS protection in place
+- ✅ CSP policy enforced
+- ⚠️ Medium: Add sender origin validation
+- ⚠️ Medium: Encrypt sync statistics
+- ⚠️ Medium: Add CSRF protection for OAuth
+
+For detailed security recommendations, see [SECURITY_FIXES.md](SECURITY_FIXES.md).
+
+---
+
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Run all tests
+npm run test:all
+
+# Run specific test file
+npm run test -- streak-calculator.test.js
+
+# Run tests in watch mode
+npm run test -- --watch
+
+# Run with coverage report
+npm run test -- --coverage
+```
+
+### Test Structure
 
 ```
-LeetStreak/
-├── public/
-│   ├── manifest.json              # Extension manifest (Manifest V3)
-│   └── icons/                     # Extension icons (16, 48, 128)
+tests/
+├── unit/                     # Isolated component tests
+│   ├── streak-logic.test.js
+│   └── improvement-rule.test.js
 │
-├── src/
-│   ├── background/
-│   │   ├── service-worker.js      # Background service worker
-│   │   └── leetcode-api.js        # LeetCode GraphQL API wrapper
-│   │
-│   ├── content/
-│   │   └── leetcode-integration.js # LeetCode page integration
-│   │
-│   ├── popup/
-│   │   ├── App.jsx                # Main popup component
-│   │   ├── Leaderboard.jsx        # Friend leaderboard view
-│   │   ├── StreakView.jsx         # Personal progress view
-│   │   ├── InsightsPanelEnhanced.jsx # Analytics dashboard
-│   │   ├── ProgressChart.jsx      # Visual progress charts
-│   │   ├── GitHubSync.jsx         # GitHub integration
-│   │   ├── AddFriend.jsx          # Add friend form
-│   │   ├── FriendCard.jsx         # Friend card component
-│   │   ├── LoadingSkeleton.jsx    # Loading states
-│   │   ├── NotificationSettings.jsx # Notification preferences
-│   │   ├── NotificationToast.jsx  # Toast notifications
-│   │   ├── Footer.jsx             # Footer with links
-│   │   └── index.jsx              # Popup entry point
-│   │
-│   ├── options/
-│   │   ├── App.jsx                # Options page component
-│   │   ├── FriendManager.jsx      # Friend management UI
-│   │   └── index.jsx              # Options entry point
-│   │
-│   ├── shared/
-│   │   ├── streak-calculator.js   # Streak calculation logic
-│   │   ├── storage.js             # Storage management
-│   │   ├── github-sync.js         # GitHub API integration
-│   │   ├── notification-manager.js # Notification handling
-│   │   ├── insights-generator.js  # Analytics calculations
-│   │   ├── goals-manager.js       # Goal tracking
-│   │   └── validation.js          # Input validation
-│   │
-│   └── styles/
-│       └── globals.css            # Global styles with Tailwind
+├── integration/              # Component interaction tests
+│   └── storage-persistence.test.js
 │
-├── scripts/
-│   ├── build-extension.js         # Extension build script
-│   └── create-icons.js            # Icon generation script
-│
-├── tests/
-│   ├── unit/                      # Unit tests
-│   ├── integration/               # Integration tests
-│   └── e2e/                       # End-to-end tests
-│
-├── popup.html                     # Popup HTML entry
-├── options.html                   # Options HTML entry
-├── vite.config.js                 # Vite configuration
-├── tailwind.config.js             # Tailwind configuration
-├── postcss.config.js              # PostCSS configuration
-├── eslint.config.js               # ESLint configuration
-├── package.json                   # Dependencies and scripts
-└── README.md                      # This file
+└── e2e/                      # End-to-end flow tests
+    ├── extension.e2e.test.js
+    └── run-e2e.js
 ```
+
+### Example Tests
+
+```javascript
+// Test streak calculation
+test('Current streak: 5 consecutive days', () => {
+  const submissionCalendar = {
+    '1702900000': 1,
+    '1702986400': 1,
+    '1703072800': 1,
+    '1703159200': 1,
+    '1703245600': 1
+  };
+  
+  const streak = calculateStreak(submissionCalendar);
+  expect(streak.current).toBe(5);
+});
+
+// Test storage operations
+test('Add friend persists in storage', async () => {
+  await addFriend('newuser');
+  const data = await chrome.storage.local.get('leetfriends_data');
+  expect(data.leetfriends_data.friends.newuser).toBeDefined();
+});
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Extension Won't Load
+**Problem:** "Cannot load extension" error
+
+**Solutions:**
+1. Ensure `dist/` folder exists: `npm run build`
+2. Check manifest.json is in `dist/` folder
+3. Verify all paths in manifest.json are correct
+4. Try reloading the extensions page
+
+#### Popup is Blank
+**Problem:** Click extension icon, see white/blank popup
+
+**Solutions:**
+1. **Check console** - Right-click popup → Inspect
+2. **Look for errors** - Check Console tab for red errors
+3. **Rebuild** - `npm run build` and reload extension
+4. **Clear storage** - Open DevTools → Application → Clear storage
+5. **Hard refresh** - Ctrl+Shift+Delete and reload
+
+#### Friends Not Appearing
+**Problem:** Add friend, but they don't show on leaderboard
+
+**Solutions:**
+1. **Check username** - Ensure LeetCode username is correct
+2. **Profile visibility** - Friend's LeetCode profile must be public
+3. **Storage issue** - Check DevTools Application tab
+4. **Reload** - Try reloading the extension (click icon again)
+
+#### Data Not Updating
+**Problem:** Friend's stats haven't changed even though they solved problems
+
+**Solutions:**
+1. **Manual refresh** - Click the refresh icon in popup
+2. **Wait for auto-sync** - Automatic sync happens every 30 minutes
+3. **Check LeetCode** - Visit LeetCode.com directly to see if stats are there
+4. **Clear cache** - DevTools → Application → Clear storage, add friend again
+
+#### GitHub Sync Not Working
+**Problem:** Solutions not uploading to GitHub
+
+**Solutions:**
+1. **Check authentication** - Go to GitHub tab, verify you're connected
+2. **Verify repository** - Check repository name in storage
+3. **Permission issues** - Ensure token has `repo` and `gist` scope
+4. **Check file format** - Ensure problem has code snippet
+
+#### Performance Issues
+**Problem:** Popup is slow or unresponsive
+
+**Solutions:**
+1. **Reduce friends** - Too many friends (100+) slows down rendering
+2. **Clear old data** - Remove unused friends from list
+3. **Update extension** - Pull latest code and rebuild
+4. **Browser cache** - Clear Chrome cache and reload
+
+### Getting Help
+
+**Before Reporting Issues:**
+1. Check this troubleshooting section
+2. Open DevTools (F12) and check console errors
+3. Try rebuilding: `npm run build`
+4. Try reloading extension in Chrome
+
+**Report a Bug:**
+- Fill out [Bug Report Form](#)
+- Include:
+  - Extension version (bottom of popup)
+  - Chrome version
+  - Steps to reproduce
+  - Screenshot of error
+  - Console logs if available
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how you can help:
+### How to Contribute
 
 1. **Fork the Repository**
    ```bash
-   git clone https://github.com/yourusername/LeetStreak.git
+   # On GitHub, click "Fork"
+   git clone https://github.com/YOUR_USERNAME/LeetStreak.git
+   cd LeetStreak
    ```
 
 2. **Create a Feature Branch**
@@ -460,281 +1164,189 @@ Contributions are welcome! Here's how you can help:
    ```
 
 3. **Make Your Changes**
-   - Follow the existing code style
-   - Add tests if applicable
-   - Update documentation as needed
+   - Follow existing code style
+   - Add tests for new features
+   - Update documentation
+   - Keep commits small and focused
 
-4. **Commit Your Changes**
+4. **Run Tests**
    ```bash
-   git commit -m "Add amazing feature"
+   npm run test:all
+   npm run lint
+   npm run build
    ```
 
-5. **Push to Your Fork**
+5. **Commit Your Changes**
+   ```bash
+   git commit -m "Add amazing feature"
+   # Clear, descriptive commit messages
+   ```
+
+6. **Push to Your Fork**
    ```bash
    git push origin feature/amazing-feature
    ```
 
-6. **Open a Pull Request**
-   - Describe your changes
+7. **Open a Pull Request**
+   - On GitHub, create PR from your fork to main repo
+   - Describe changes clearly
    - Reference any related issues
+   - Wait for review and feedback
 
 ### Code Style Guidelines
-- Use ESLint configuration provided
-- Follow React best practices
-- Write clean, commented code
-- Test your changes thoroughly
+
+```javascript
+// ✅ DO: Clear, descriptive variable names
+const calculateCurrentStreak = (calendar) => {
+  // Implementation
+};
+
+// ❌ DON'T: Cryptic abbreviations
+const calc = (cal) => {
+  // Implementation
+};
+```
+
+```javascript
+// ✅ DO: Use modern async/await
+async function fetchUserData(username) {
+  const response = await fetch(url);
+  return await response.json();
+}
+
+// ❌ DON'T: Chain .then() unnecessarily
+fetchUserData(username).then(data => {
+  // ...
+});
+```
+
+```javascript
+// ✅ DO: Add comments for complex logic
+// UTC timestamp comparison for streak calculation
+if (calendar[day] && calendar[day - 86400]) {
+  // These are consecutive days
+}
+
+// ❌ DON'T: Skip comments on unclear code
+if (c[d] && c[d - 86400]) {
+  // ...
+}
+```
+
+### Contribution Ideas
+
+- 🐛 **Bug fixes** - Submit fixes for reported issues
+- 🎨 **UI improvements** - Enhance design and UX
+- ⚡ **Performance** - Optimize slow operations
+- 📝 **Documentation** - Improve README and comments
+- 🧪 **Tests** - Add more comprehensive tests
+- 🌐 **Translations** - Add support for other languages
+- ♿ **Accessibility** - Improve a11y compliance
 
 ---
 
-## 🐛 Bug Reports
+## 📋 Known Limitations
 
-Found a bug? Please report it!
+### API Rate Limiting
+- **LeetCode API** - Rate limits apply; extension uses sequential fetching
+- **Max Friends** - Recommended limit ~200 friends before performance degrades
+- **Refresh Rate** - Auto-sync every 30 minutes (not real-time)
 
-**[Report a Bug](https://forms.gle/C3hsVfCnHrSw3c6)**
+### Data Limitations
+- **Private Profiles** - Cannot track users with private LeetCode profiles
+- **Daily Challenge** - Detection is approximate (LeetCode doesn't expose via API)
+- **Real-time Stats** - Data updates every 30 minutes, not instantly
+- **Historical Data** - Only recent submissions available
 
-Or open an issue on GitHub with:
-- Clear description of the bug
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots if applicable
-- Browser version and extension version
-
----
-
-## 📝 Known Limitations
-
-- **API Rate Limits**: LeetCode API has rate limits; extension uses sequential fetching with delays
-- **Private Profiles**: Cannot track users with private LeetCode profiles
-- **Storage Limits**: Chrome storage has limits; recommended max ~200 friends
-- **Daily Challenge**: Detection is approximate as LeetCode doesn't expose this directly in API
-- **Real-time Updates**: Data refreshes every 30 minutes, not real-time
+### Chrome Limitations
+- **Storage Quota** - 5MB limit for chrome.storage.local
+- **Popup Window** - Fixed 400x600px size (cannot be resized)
+- **Cross-origin** - Limited by browser security policies
+- **Background** - Service worker can be suspended after inactivity
 
 ---
 
 ## 🔮 Future Enhancements
 
-- [ ] Chrome Web Store publication
-- [ ] Weekly/monthly summary emails
-- [ ] Custom goals and challenges
-- [ ] Team/group competitions
-- [ ] Browser compatibility (Firefox, Edge)
-- [ ] Mobile companion app
-- [ ] Advanced analytics with ML insights
-- [ ] Integration with other coding platforms
+Planned features for future releases:
+
+- [ ] **Chrome Web Store Publication** - Official extension listing
+- [ ] **Weekly Digests** - Email summaries of friend activity
+- [ ] **Custom Goals** - Set and track personal targets
+- [ ] **Team Competitions** - Group challenges and leaderboards
+- [ ] **Cross-Browser Support** - Firefox, Edge, Opera
+- [ ] **Mobile Companion** - iOS/Android app
+- [ ] **Advanced Analytics** - ML-powered insights
+- [ ] **Social Features** - Comments, achievements, rewards
+- [ ] **Multi-Language** - i18n support
+- [ ] **Offline Mode** - Full offline functionality
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
 
 ---
 
-## 💖 Acknowledgments
+## 💖 Acknowledgments & Credits
 
-- LeetCode for the amazing platform and API
-- Chrome Extensions community for documentation
-- React and Vite teams for excellent tools
-- All contributors and users
+- **LeetCode** - Amazing platform and GraphQL API
+- **GitHub** - Repository hosting and API
+- **React** - UI framework powering the extension
+- **Chrome Extensions Team** - Documentation and tools
+- **Open Source Community** - Inspiration and support
 
 ---
 
-## 👨‍💻 Author
+## 👨‍💻 About the Author
 
 **Sankalp Sharma**
 
-- GitHub: [@sankalpsharma99](https://github.com/sankalpsharma99)
-- Project Link: [https://github.com/sankalpsharma99/LeetStreak](https://github.com/sankalpsharma99/LeetStreak)
+Building LeetStreak to help the coding community stay motivated and competitive!
+
+- 🔗 GitHub: [@sankalpsharma99](https://github.com/sankalpsharma99)
+- 📧 Contact: Open issues or create discussions on GitHub
+- 🎓 From: Chitkara University
+
+---
+
+## 📞 Support & Contact
+
+- **Bug Reports** - [Submit Form](#)
+- **Feature Requests** - Open an issue on GitHub
+- **Questions** - Create a discussion on GitHub
+- **Security Issues** - Email privately (don't open public issues)
 
 ---
 
 <div align="center">
-  
-  **Built with ❤️ for the LeetCode community**
-  
-  ⭐ Star this repo if you find it helpful!
-  
-</div>
-  
-</div>
 
-## ✨ Features
+**⭐ If you find LeetStreak helpful, please consider giving it a star on GitHub!**
 
-- **Friend Management**: Add/remove friends by their LeetCode username
-- **Leaderboard**: Compare streaks, problems solved, and difficulty breakdown
-- **Detailed Stats**: View badges, contest ratings, and recent submissions
-- **Real-time Updates**: Background sync every 30 minutes
-- **Smart Caching**: Intelligent data refresh strategy to avoid rate limits
-- **Notifications**: Get notified when friends hit streak milestones
-
-## 🚀 Tech Stack
-
-- **React 19** + **Vite** - Modern frontend development
-- **Tailwind CSS** - Utility-first styling
-- **Chrome Extension Manifest V3** - Latest extension APIs
-- **LeetCode GraphQL API** - Official data source
-
-## 📦 Installation
-
-### Development Mode
-
-1. **Clone and Install Dependencies**
-   ```bash
-   cd L:\Projects\LeetStreak
-   npm install
-   ```
-
-2. **Build the Extension**
-   ```bash
-   npm run build
-   ```
-
-3. **Load in Chrome**
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in top-right)
-   - Click "Load unpacked"
-   - Select the `dist` folder
-
-4. **Development with Hot Reload**
-   ```bash
-   npm run build:watch
-   ```
-   Then reload the extension in Chrome after changes.
-
-## 🎯 Architecture Overview
-
-### Core Components
-
-- **Background Service Worker** (`src/background/service-worker.js`)
-  - Handles 30-minute alarm-based sync
-  - Sequential API fetching with 500ms delays
-  - Manages Chrome storage and notifications
-
-- **LeetCode API Service** (`src/background/leetcode-api.js`)
-  - GraphQL queries for user data
-  - Fetches profile, stats, badges, submissions, and calendar
-
-- **Streak Calculator** (`src/shared/streak-calculator.js`)
-  - UTC-based consecutive day calculation
-  - Matches LeetCode's official streak logic
-
-- **Storage Manager** (`src/shared/storage.js`)
-  - Handles chrome.storage.local operations
-  - Structured data management
-
-- **Popup UI** (`src/popup/`)
-  - Main leaderboard view
-  - Friend cards with expandable details
-  - Add friend functionality
-
-- **Options Page** (`src/options/`)
-  - Full friend list management
-  - Storage statistics
-  - Extension settings
-
-## 📐 Technical Decisions
-
-### Streak Calculation
-- **Method**: Consecutive days with at least 1 submission
-- **Timezone**: UTC (matches LeetCode server time)
-- **Data Source**: `submissionCalendar` from GraphQL API
-
-### Data Fetching Strategy
-- **Background Sync**: Every 30 minutes via Chrome alarms
-- **User-Triggered**: Popup checks for stale data (>15 mins)
-- **Rate Limiting**: Sequential fetching with 500ms delays
-- **Caching**: Chrome.storage.local for offline support
-
-### Storage Structure
-```javascript
-{
-  leetfriends_data: {
-    friends: {
-      "username1": {
-        profile: { username, realName, avatar, ranking },
-        stats: { easy, medium, hard, total, streak },
-        contest: { rating, attended, ranking },
-        badges: [...],
-        recentSubmissions: [...],
-        submissionCalendar: {...},
-        lastUpdated: 1234567890
-      }
-    }
-  }
-}
-```
-
-## 🎨 UI Components
-
-- **Skeleton Loaders**: Shown during initial data fetch
-- **Expandable Cards**: Click to view detailed stats
-- **Rank Badges**: 🥇🥈🥉 for top 3 friends
-- **Difficulty Colors**: 
-  - Easy: `#00B8A3` (teal)
-  - Medium: `#FFC01E` (yellow)
-  - Hard: `#FF375F` (red)
-
-## 🔔 Notifications
-
-Notifications are triggered when:
-- A friend's streak increases
-- A friend enters the top 3 leaderboard
-
-## 🛠️ Build Scripts
-
-- `npm run build` - Production build + extension packaging
-- `npm run build:watch` - Watch mode for development
-- `npm run dev` - Vite dev server (for component testing only)
-- `npm run lint` - ESLint code checking
-
-## 📁 Project Structure
-
-```
-LeetStreak/
-├── public/
-│   ├── manifest.json          # Extension manifest
-│   └── icons/                 # Extension icons
-├── src/
-│   ├── background/
-│   │   ├── service-worker.js  # Background service worker
-│   │   └── leetcode-api.js    # API wrapper
-│   ├── popup/
-│   │   ├── App.jsx            # Main popup component
-│   │   ├── Leaderboard.jsx    # Leaderboard view
-│   │   ├── FriendCard.jsx     # Friend card component
-│   │   ├── AddFriend.jsx      # Add friend form
-│   │   └── LoadingSkeleton.jsx
-│   ├── options/
-│   │   ├── App.jsx            # Options page
-│   │   └── FriendManager.jsx  # Friend management
-│   ├── shared/
-│   │   ├── streak-calculator.js
-│   │   └── storage.js
-│   └── styles/
-│       └── globals.css        # Tailwind styles
-├── scripts/
-│   └── build-extension.js     # Build script
-├── popup.html                 # Popup entry point
-├── options.html               # Options entry point
-├── vite.config.js             # Vite configuration
-├── tailwind.config.js         # Tailwind configuration
-└── package.json
-```
-
-## 🐛 Known Limitations
-
-- LeetCode API has rate limits - extension fetches data sequentially with delays
-- Private profiles cannot be tracked
-- Daily Challenge detection is approximate (LeetCode doesn't expose this directly)
-- Maximum ~200 friends before hitting Chrome storage limits
-
-## 🤝 Contributing
-
-This is a personal project, but feel free to fork and customize!
-
-## 📝 License
+**Built with ❤️ for the LeetCode community**
 
 ---
+
+*Last Updated: December 30, 2025*
+
+*Version: 1.0.0*
+
+</div>
 
 **Built with ❤️ for the LeetCode community**
 
