@@ -1,7 +1,11 @@
 import React from 'react';
-import { Github, Bug } from 'lucide-react';
+import { Github, Bug, Settings } from 'lucide-react';
 
 function Footer() {
+  const handleSettingsClick = () => {
+    chrome.runtime.openOptionsPage();
+  };
+
   const handleGitHubClick = () => {
     chrome.tabs.create({ 
       url: 'https://github.com/SankalpSharma23/LeetStreak' 
@@ -17,6 +21,15 @@ function Footer() {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/80 backdrop-blur-md border-t border-surfaceHover/50 py-2.5 px-4 flex items-center justify-end z-40">
       <div className="flex items-center gap-2">
+        {/* Settings Button */}
+        <button
+          onClick={handleSettingsClick}
+          className="p-2 rounded-lg bg-surface hover:bg-surfaceHover transition-all duration-200 group shadow-sm hover:shadow-md"
+          title="Open settings"
+        >
+          <Settings className="w-4 h-4 text-text-muted group-hover:text-primary group-hover:scale-110 transition-all" />
+        </button>
+
         {/* Bug Report Button */}
         <button
           onClick={handleBugReportClick}
