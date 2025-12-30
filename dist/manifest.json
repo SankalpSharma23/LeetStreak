@@ -12,8 +12,13 @@
   "host_permissions": [
     "https://leetcode.com/*",
     "https://leetcode.com/graphql",
-    "https://api.github.com/*"
+    "https://api.github.com/*",
+    "https://github.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests; report-uri /__/csp-report",
+    "sandbox": "sandbox allow-scripts; script-src 'self'"
+  },
   "background": {
     "service_worker": "service-worker.js",
     "type": "module"
@@ -31,6 +36,8 @@
     }
   ],
   "icons": {
-    "128": "icons/icon.svg"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }
