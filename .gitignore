@@ -1,5 +1,5 @@
-# Dependencies
-node_modules/
+# Dependencies - INTENTIONALLY TRACKED for users to run extension immediately
+# node_modules/ is tracked so users don't need to run npm install
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -46,9 +46,6 @@ coverage/
 # Temporary folders
 tmp/
 temp/
-
-# Optional npm cache directory
-.npm
 
 # Optional REPL history
 .node_repl_history
