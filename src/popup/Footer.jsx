@@ -1,9 +1,11 @@
 import React from 'react';
 import { Github, Bug, Settings } from 'lucide-react';
 
-function Footer() {
+function Footer({ onSettingsClick }) {
   const handleSettingsClick = () => {
-    chrome.runtime.openOptionsPage();
+    if (onSettingsClick) {
+      onSettingsClick();
+    }
   };
 
   const handleGitHubClick = () => {

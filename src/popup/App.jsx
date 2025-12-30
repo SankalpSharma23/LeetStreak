@@ -11,13 +11,14 @@ import Leaderboard from './Leaderboard';
 import InsightsPanelEnhanced from './InsightsPanelEnhanced';
 import ProgressChart from './ProgressChart';
 import GitHubSync from './GitHubSync';
+import SettingsPanel from './SettingsPanel';
 
 function App() {
   const [friends, setFriends] = useState({});
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [view, setView] = useState('streak'); // 'streak', 'leaderboard', 'analytics', or 'github'
+  const [view, setView] = useState('streak'); // 'streak', 'leaderboard', 'analytics', 'github', or 'settings'
   const [myUsername, setMyUsername] = useState(null);
   const [setupMode, setSetupMode] = useState(false);
   const [setupUsername, setSetupUsername] = useState('');
@@ -437,7 +438,13 @@ function App() {
 
             {/* Content */}
             <div className="flex-1 overflow-hidden bg-background flex flex-col pb-10">
-              {view === 'streak' ? (
+              {view === 'settings' ? (
+                <SettingsPanel 
+                  onBack={() => setView('streak')}
+                  theme={theme}
+                  onThemeChange={setTheme}
+                />
+              ) : view === 'streak' ? (
                 hasData ? (
                   <StreakView 
                     friends={[myData]} 
@@ -502,7 +509,7 @@ function App() {
         />
 
         {/* Footer */}
-        <Footer />
+        <Footer onSettingsClick={() => setView('settings')} />
       </div>
     </>
   );
