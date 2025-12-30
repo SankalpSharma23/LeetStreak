@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
+  Flame, Rocket, Zap, Star, Lightbulb, PartyPopper, Dumbbell, 
+  Crown, Medal, Trophy, Scale, Sprout, Target, BarChart3 
+} from 'lucide-react';
+import { 
   generateInsights, 
   calculateSuccessMetrics, 
   analyzeTopicPerformance,
@@ -11,12 +15,34 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailInsight, setDetailInsight] = useState(null);
-  const [activeTab, setActiveTab] = useState('insights'); // 'insights', 'analytics', 'comparison'
+  const [activeTab, setActiveTab] = useState('insights'); // Re-added for tab functionality
+  const [weekAgo] = useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // Lazy initial state
+
+  // Icon rendering helper
+  const renderIcon = (iconName, className = "w-8 h-8") => {
+    const icons = {
+      flame: <Flame className={className} />,
+      rocket: <Rocket className={className} />,
+      zap: <Zap className={className} />,
+      star: <Star className={className} />,
+      lightbulb: <Lightbulb className={className} />,
+      party: <PartyPopper className={className} />,
+      dumbbell: <Dumbbell className={className} />,
+      crown: <Crown className={className} />,
+      medal: <Medal className={className} />,
+      trophy: <Trophy className={className} />,
+      scale: <Scale className={className} />,
+      sprout: <Sprout className={className} />,
+      target: <Target className={className} />,
+      chart: <BarChart3 className={className} />
+    };
+    return icons[iconName] || <Star className={className} />;
+  };
 
   useEffect(() => {
     if (userData) {
       const generatedInsights = generateInsights(userData);
-      setInsights(generatedInsights);
+      setInsights(generatedInsights); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [userData]);
   
@@ -111,7 +137,7 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
                   onClick={() => setSelectedInsight(selectedInsight === index ? null : index)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-3xl">{insight.icon}</div>
+                    <div className="text-3xl">{renderIcon(insight.icon, "w-8 h-8 text-primary")}</div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">
@@ -380,7 +406,7 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3 mb-4">
-              <div className="text-4xl">{detailInsight.icon}</div>
+              {renderIcon(detailInsight.icon, "w-12 h-12 text-primary")}
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-text-primary mb-1">
                   {detailInsight.category}
@@ -475,7 +501,6 @@ export default function InsightsPanelEnhanced({ userData, friendsData = [] }) {
                       <span className="text-text-muted">Last 7 days:</span>
                       <span className="font-bold">{userData.recentSubmissions.filter(sub => {
                         const subDate = new Date(sub.timestamp * 1000);
-                        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                         return subDate > weekAgo;
                       }).length} submissions</span>
                     </div>

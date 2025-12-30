@@ -59,6 +59,65 @@
     }
   }
   
+  // Check if problem is marked as solved/submitted on the page
+  function checkIfProblemSolved() {
+    try {
+      // Look for "Solved" badge or checkmark icon
+      // LeetCode shows solved status with checkmark or "Solved" text
+      
+      // Check 1: Look for SVG checkmark in problem title area
+      const titleArea = document.querySelector('[data-cy="question-title"]')?.parentElement;
+      if (titleArea) {
+        const checkmarks = titleArea.querySelectorAll('svg[class*="check"], svg[class*="done"]');
+        if (checkmarks.length > 0) {
+          console.log('Found checkmark in title area');
+          return true;
+        }
+      }
+      
+      // Check 2: Look for "Solved" text badge
+      const allElements = document.querySelectorAll('*');
+      for (let elem of allElements) {
+        if (elem.textContent === 'Solved' && elem.offsetParent !== null) {
+          console.log('Found "Solved" badge');
+          return true;
+        }
+      }
+      
+      // Check 3: Look for checkmark in the problem header area
+      const headerArea = document.querySelector('[data-cy="question-header"]') ||
+                        document.querySelector('[class*="header"]');
+      if (headerArea) {
+        const successIcon = headerArea.querySelector('[class*="success"], [class*="accepted"], svg[class*="fill-green"]');
+        if (successIcon) {
+          console.log('Found success icon in header');
+          return true;
+        }
+      }
+      
+      // Check 4: Look for green checkmark SVG anywhere in top section
+      const topSection = document.querySelector('[class*="top"], [data-cy="problem-statement"]');
+      if (topSection) {
+        const svgs = topSection.querySelectorAll('svg');
+        for (let svg of svgs) {
+          const classes = svg.className.baseVal || svg.className;
+          const fill = svg.getAttribute('fill') || svg.style.fill;
+          // Green fill indicates accepted/solved
+          if ((classes.includes('check') || classes.includes('done')) && 
+              (fill === '#22c55e' || fill.includes('green') || classes.includes('green'))) {
+            console.log('Found green checkmark SVG');
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking if problem solved:', error);
+      return false;
+    }
+  }
+  
   // Extract user's code
   function extractCode() {
     try {
@@ -82,14 +141,56 @@
     }
   }
   
-  // Get selected language
+  // Get selected language - improved detection
   function getSelectedLanguage() {
     try {
-      const langButton = document.querySelector('button[id*="lang"]') ||
-                        document.querySelector('[class*="lang-select"]');
-      return langButton ? langButton.textContent.trim() : 'Python';
+      // Strategy 1: Try Monaco editor language
+      if (window.monaco && window.monaco.editor) {
+        const models = window.monaco.editor.getModels();
+        if (models.length > 0) {
+          const lang = models[0].getLanguageId();
+          if (lang && lang !== 'plaintext') {
+            return normalizeLanguage(lang);
+          }
+        }
+      }
+      
+      // Strategy 2: Try language selector dropdown button
+      const langButton = document.querySelector('button[title*="language"], button[aria-label*="language"]') ||
+                        document.querySelector('[class*="lang-select"] button') ||
+                        document.querySelector('button[id*="lang"]');
+      if (langButton && langButton.textContent) {
+        const text = langButton.textContent.trim();
+        if (text && text !== '') {
+          return normalizeLanguage(text);
+        }
+      }
+      
+      // Strategy 3: Try to find language from dropdown menu
+      const langDropdown = document.querySelector('[data-mode-id]');
+      if (langDropdown) {
+        const modeId = langDropdown.getAttribute('data-mode-id');
+        if (modeId) {
+          return normalizeLanguage(modeId);
+        }
+      }
+      
+      // Strategy 4: Try localStorage for language preference
+      try {
+        const globalLang = localStorage.getItem('global_lang');
+        if (globalLang) {
+          const parsed = JSON.parse(globalLang);
+          if (parsed.lang) {
+            return normalizeLanguage(parsed.lang);
+          }
+        }
+      } catch (e) {}
+      
+      // Default fallback
+      return 'python3';
     } catch (error) {
-      return 'Python';
+      console.error('Error detecting language:', error);
+      return 'python3';
     }
   }
   
@@ -103,10 +204,18 @@
       ? 'linear-gradient(135deg, #ffa116 0%, #f89f1b 50%, #ffc01e 100%)'
       : 'linear-gradient(135deg, #ffa116 0%, #f89f1b 100%)';
     
-    button.innerHTML = `
-      <span class="icon" style="display: inline-block; transition: transform 0.3s ease;">${icon}</span>
-      <span class="text">${text}</span>
-    `;
+    // Safely create button content
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'icon';
+    iconSpan.style.cssText = 'display: inline-block; transition: transform 0.3s ease;';
+    iconSpan.innerHTML = icon; // SVG is safe - comes from static code
+    
+    const textSpan = document.createElement('span');
+    textSpan.className = 'text';
+    textSpan.textContent = text; // Use textContent for user text
+    
+    button.appendChild(iconSpan);
+    button.appendChild(textSpan);
     
     if (isFloating) {
       button.style.cssText = `
@@ -255,7 +364,7 @@
   }
   
   // Create floating action button as fallback
-  function createFloatingButton() {
+  function _createFloatingButton() {
     // Remove if already exists
     const existing = document.getElementById('leetstreak-floating-menu');
     if (existing) return;
@@ -354,6 +463,13 @@
       showNotification('❌ Could not extract problem data', 'error');
       return;
     }
+
+    // Check if problem is already solved/submitted on the page
+    const isSolved = checkIfProblemSolved();
+    if (isSolved) {
+      currentProblemData.status = 'completed';
+      console.log('Problem detected as solved on page');
+    }
     
     try {
       // Use chrome.runtime.sendMessage instead of direct storage access
@@ -415,11 +531,20 @@
   async function handleCodeScreenshot() {
     currentProblemData = extractProblemData();
     const code = extractCode();
-    const language = getSelectedLanguage();
+    let language = getSelectedLanguage();
     
     if (!code) {
       showNotification('❌ No code found. Write some code first!', 'error');
       return;
+    }
+    
+    // If language detection failed or defaulted, try to analyze the code
+    if (!language || language === 'python3') {
+      const detectedLang = analyzeCodeLanguage(code);
+      if (detectedLang) {
+        language = detectedLang;
+        console.log('LeetStreak: Detected language from code analysis:', language);
+      }
     }
     
     showNotification('📸 Generating screenshot...', 'info');
@@ -462,10 +587,16 @@
       max-height: 90vh;
       overflow: auto;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     `;
     
-    // Generate screenshot HTML
-    content.innerHTML = generateScreenshotHTML(problemData, code, language);
+    // Hide scrollbar for webkit browsers
+    content.style.webkitScrollbar = 'none';
+    
+    // Generate screenshot HTML safely
+    const screenshotElement = generateScreenshotElement(problemData, code, language);
+    content.appendChild(screenshotElement);
     
     modal.appendChild(content);
     document.body.appendChild(modal);
@@ -477,142 +608,196 @@
       }
     });
     
-    // Add event listeners for buttons
-    setTimeout(() => {
-      document.getElementById('leetstreak-close-modal')?.addEventListener('click', () => {
+    // Add event listeners for buttons - use direct reference instead of setTimeout
+    const closeModal = document.getElementById('leetstreak-close-modal');
+    const downloadBtn = document.getElementById('leetstreak-download-screenshot');
+    
+    if (closeModal) {
+      closeModal.addEventListener('click', () => {
         modal.remove();
       });
-      
-      document.getElementById('leetstreak-download-screenshot')?.addEventListener('click', () => {
-        downloadScreenshot(problemData.title);
+    }
+    
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Download button clicked');
+        await downloadScreenshot(problemData.title);
       });
-    }, 100);
+    } else {
+      console.error('Download button not found in modal');
+    }
+    
+    // Inject CSS to hide scrollbars globally
+    injectScrollbarCSS();
   }
   
-  // Generate beautiful screenshot HTML with updated colors and fonts
-  function generateScreenshotHTML(problemData, code, language) {
+  // Inject CSS to hide scrollbars
+  function injectScrollbarCSS() {
+    if (document.getElementById('leetstreak-scrollbar-css')) {
+      return; // Already injected
+    }
+    
+    const style = document.createElement('style');
+    style.id = 'leetstreak-scrollbar-css';
+    style.textContent = `
+      #leetstreak-screenshot-modal ::-webkit-scrollbar {
+        display: none;
+      }
+      #leetstreak-screenshot-modal {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      #leetstreak-screenshot-modal * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      #leetstreak-screenshot-modal *::-webkit-scrollbar {
+        display: none;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Generate beautiful screenshot element with safe DOM manipulation
+  function generateScreenshotElement(problemData, code, language) {
     const difficultyColors = {
-      easy: '#22c55e',
-      medium: '#eab308',
-      hard: '#ef4444'
+      easy: '#3fb950',
+      medium: '#d29922',
+      hard: '#da3633'
     };
     
     const difficultyColor = difficultyColors[problemData.difficulty.toLowerCase()] || difficultyColors.medium;
-    // New gradient: blue to purple
-    const bgGradient = `linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%)`;
+    const bgGradient = `linear-gradient(135deg, #0d1117 0%, #161b22 100%)`;
     
-    return `
-      <div style="padding: 40px; background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%); min-height: 100vh;">
-        <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-          <h2 style="margin: 0; font-size: 32px; color: #1e293b; font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 800; letter-spacing: -0.5px;">
-            Code Screenshot
-          </h2>
-          <button id="leetstreak-close-modal" style="
-            background: #e2e8f0;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #64748b;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 14px;
-            transition: all 0.2s ease;
-            font-weight: 300;
-          " onmouseover="this.style.background='#cbd5e1'; this.style.color='#475569';" 
-             onmouseout="this.style.background='#e2e8f0'; this.style.color='#64748b';">×</button>
-        </div>
-        
-        <!-- Screenshot Content -->
-        <div id="leetstreak-screenshot-content" style="
-          background: ${bgGradient};
-          border-radius: 28px;
-          padding: 48px;
-          color: #ffffff;
-          font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-          box-shadow: 0 25px 70px rgba(30, 64, 175, 0.4);
-        ">
-          <!-- Problem Header -->
-          <div style="margin-bottom: 36px;">
-            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
-              <span style="
-                background: ${difficultyColor};
-                padding: 8px 18px;
-                border-radius: 14px;
-                font-size: 14px;
-                font-weight: 800;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                color: white;
-                box-shadow: 0 6px 16px ${difficultyColor}50;
-                font-family: 'Inter', sans-serif;
-              ">${problemData.difficulty}</span>
-              ${problemData.number ? `<span style="opacity: 0.95; font-size: 16px; font-weight: 700; font-family: 'Inter', sans-serif;">#${problemData.number}</span>` : ''}
-            </div>
-            <h1 style="margin: 0; font-size: 36px; font-weight: 900; line-height: 1.2; color: #ffffff; font-family: 'Inter', sans-serif; letter-spacing: -0.8px;">
-              ${problemData.title}
-            </h1>
-          </div>
-          
-          <!-- Code Block -->
-          <div style="
-            background: rgba(0, 0, 0, 0.35);
-            border-radius: 20px;
-            padding: 28px;
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-          ">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.15);">
-              <span style="font-size: 15px; opacity: 1; font-weight: 800; color: ${difficultyColor}; font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">${language}</span>
-              <span style="font-size: 14px; opacity: 0.85; font-weight: 600; font-family: 'Inter', sans-serif;">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-            </div>
-            <pre style="
-              margin: 0;
-              font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
-              font-size: 16px;
-              line-height: 2;
-              overflow-x: auto;
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              color: #f8fafc;
-              font-weight: 500;
-            ">${escapeHtml(code)}</pre>
-          </div>
-          
-          <!-- Footer -->
-          <div style="margin-top: 36px; display: flex; justify-content: space-between; align-items: center; opacity: 0.95; font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;">
-            <span style="color: ${difficultyColor}; font-size: 16px;">🔥 LeetStreak</span>
-            <span style="font-weight: 600;">leetcode.com</span>
-          </div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 16px; margin-top: 40px; justify-content: center;">
-          <button id="leetstreak-download-screenshot" style="
-            padding: 16px 36px;
-            background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
-            color: white;
-            border: none;
-            border-radius: 18px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
-            font-family: 'Inter', 'SF Pro Display', sans-serif;
-            letter-spacing: 0.3px;
-          " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 30px rgba(20, 184, 166, 0.5)';" 
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(20, 184, 166, 0.4)';"
-             onmousedown="this.style.transform='translateY(-1px)';"
-             onmouseup="this.style.transform='translateY(-3px)';">
-            💾 Download PNG
-          </button>
-        </div>
-      </div>
-    `;
+    // Main container
+    const container = document.createElement('div');
+    container.style.cssText = 'padding: 32px; background: #0d1117; min-height: 100vh;';
+    
+    // Header section with improved styling
+    const header = document.createElement('div');
+    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;';
+    
+    const title = document.createElement('h2');
+    title.textContent = '✨ Code Screenshot';
+    title.style.cssText = "margin: 0; font-size: 32px; color: #c9d1d9; font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 800; letter-spacing: -0.5px;";
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'leetstreak-close-modal';
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'background: #21262d; border: 1px solid #30363d; font-size: 24px; cursor: pointer; color: #8b949e; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; transition: all 0.2s ease; font-weight: 300;';
+    closeBtn.onmouseover = function() { this.style.background='#30363d'; this.style.color='#c9d1d9'; this.style.transform='scale(1.05)'; };
+    closeBtn.onmouseout = function() { this.style.background='#21262d'; this.style.color='#8b949e'; this.style.transform='scale(1)'; };
+    
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    
+    // Screenshot content with enhanced styling
+    const screenshotContent = document.createElement('div');
+    screenshotContent.id = 'leetstreak-screenshot-content';
+    screenshotContent.style.cssText = `background: ${bgGradient}; border-radius: 24px; padding: 48px; color: #c9d1d9; font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); border: 1px solid #30363d;`;
+    
+    // Problem header
+    const problemHeader = document.createElement('div');
+    problemHeader.style.cssText = 'margin-bottom: 36px;';
+    
+    const badgeContainer = document.createElement('div');
+    badgeContainer.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 16px;';
+    
+    const difficultyBadge = document.createElement('span');
+    difficultyBadge.textContent = problemData.difficulty.toUpperCase();
+    difficultyBadge.style.cssText = `background: ${difficultyColor}20; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: ${difficultyColor}; box-shadow: 0 4px 12px ${difficultyColor}20; font-family: 'Inter', sans-serif; border: 1px solid ${difficultyColor}40;`;
+    badgeContainer.appendChild(difficultyBadge);
+    
+    if (problemData.number) {
+      const numberSpan = document.createElement('span');
+      numberSpan.textContent = `#${problemData.number}`;
+      numberSpan.style.cssText = "opacity: 0.9; font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;";
+      badgeContainer.appendChild(numberSpan);
+    }
+    
+    const problemTitle = document.createElement('h1');
+    problemTitle.textContent = problemData.title;
+    problemTitle.style.cssText = "margin: 0; font-size: 36px; font-weight: 900; line-height: 1.2; color: #e6edf3; font-family: 'Inter', sans-serif; letter-spacing: -0.8px;";
+    
+    problemHeader.appendChild(badgeContainer);
+    problemHeader.appendChild(problemTitle);
+    
+    // Code block with improved styling
+    const codeBlock = document.createElement('div');
+    codeBlock.style.cssText = 'background: #0d1117; border-radius: 18px; padding: 28px; border: 1px solid #30363d;';
+    
+    const codeHeader = document.createElement('div');
+    codeHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #30363d;';
+    
+    const langSpan = document.createElement('span');
+    langSpan.textContent = getDisplayLanguageName(language);
+    langSpan.style.cssText = `font-size: 14px; opacity: 1; font-weight: 800; color: #58a6ff; font-family: 'Inter', sans-serif; letter-spacing: 0.5px;`;
+    
+    const dateSpan = document.createElement('span');
+    dateSpan.textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    dateSpan.style.cssText = "font-size: 13px; opacity: 0.85; font-weight: 600; font-family: 'Inter', sans-serif; color: #8b949e;";
+    
+    codeHeader.appendChild(langSpan);
+    codeHeader.appendChild(dateSpan);
+    
+    const codeEl = document.createElement('pre');
+    codeEl.textContent = code; // textContent automatically escapes
+    codeEl.style.cssText = "margin: 0; font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 15px; line-height: 1.8; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; color: #e6edf3; font-weight: 500; max-height: 400px; overflow-y: auto;";
+    
+    codeBlock.appendChild(codeHeader);
+    codeBlock.appendChild(codeEl);
+    
+    // Footer with enhanced branding
+    const footer = document.createElement('div');
+    footer.style.cssText = "margin-top: 36px; display: flex; justify-content: space-between; align-items: center; opacity: 0.95; font-size: 14px; font-weight: 700; font-family: 'Inter', sans-serif;";
+    
+    const brandSpan = document.createElement('span');
+    brandSpan.textContent = '🔥 LeetStreak';
+    brandSpan.style.cssText = `color: #58a6ff; font-size: 16px;`;
+    
+    const urlSpan = document.createElement('span');
+    urlSpan.textContent = 'leetcode.com';
+    urlSpan.style.cssText = 'font-weight: 600; color: #8b949e;';
+    
+    footer.appendChild(brandSpan);
+    footer.appendChild(urlSpan);
+    
+    // Assemble screenshot content
+    screenshotContent.appendChild(problemHeader);
+    screenshotContent.appendChild(codeBlock);
+    screenshotContent.appendChild(footer);
+    
+    // Action buttons with improved styling - positioned at bottom
+    const actionButtons = document.createElement('div');
+    actionButtons.style.cssText = 'display: flex; gap: 12px; margin-top: 28px; padding-top: 28px; border-top: 1px solid #30363d; justify-content: flex-end; flex-wrap: wrap;';
+    
+    const downloadBtn = document.createElement('button');
+    downloadBtn.id = 'leetstreak-download-screenshot';
+    downloadBtn.textContent = '⬇️ Download PNG';
+    downloadBtn.style.cssText = "padding: 12px 28px; background: #000000; color: #ff8c00; border: 2px solid #ff8c00; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 6px 20px rgba(255, 140, 0, 0.25); font-family: 'Inter', 'SF Pro Display', sans-serif; letter-spacing: 0.3px; white-space: nowrap;";
+    downloadBtn.onmouseover = function() { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(255, 140, 0, 0.35)'; this.style.background='#1a1a1a'; };
+    downloadBtn.onmouseout = function() { this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(255, 140, 0, 0.25)'; this.style.background='#000000'; };
+    downloadBtn.onmousedown = function() { this.style.transform='translateY(0px)'; };
+    downloadBtn.onmouseup = function() { this.style.transform='translateY(-2px)'; };
+    
+    actionButtons.appendChild(downloadBtn);
+    
+    // Assemble main container
+    container.appendChild(header);
+    container.appendChild(screenshotContent);
+    container.appendChild(actionButtons);
+    
+    return container;
+  }
+  
+  // Legacy function for backwards compatibility - now calls the safe version
+  function generateScreenshotHTML(problemData, code, language) {
+    const element = generateScreenshotElement(problemData, code, language);
+    const wrapper = document.createElement('div');
+    wrapper.appendChild(element);
+    return wrapper.innerHTML;
   }
   
   // Escape HTML
@@ -623,7 +808,7 @@
   }
   
   // Copy screenshot to clipboard
-  async function copyScreenshotToClipboard() {
+  async function _copyScreenshotToClipboard() {
     try {
       const element = document.getElementById('leetstreak-screenshot-content');
       if (!element) return;
@@ -654,129 +839,256 @@
     }
   }
   
-  // Download screenshot - Improved version with better error handling
+  // Download screenshot - Capture visual content exactly as displayed
   async function downloadScreenshot(problemTitle) {
     try {
+      console.log('Starting download process...');
+      
       const element = document.getElementById('leetstreak-screenshot-content');
       if (!element) {
+        console.error('Screenshot element not found');
         showNotification('❌ Screenshot element not found', 'error');
         return;
       }
       
-      showNotification('📸 Generating screenshot...', 'info');
+      console.log('Screenshot element found, capturing visual content...');
+      showNotification('📸 Capturing screenshot...', 'info');
       
-      // Wait for html2canvas if it's loading
-      let attempts = 0;
-      while (typeof html2canvas === 'undefined' && attempts < 15) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        attempts++;
+      // Create a wrapper with styling
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'fixed';
+      wrapper.style.top = '-9999px';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = (element.offsetWidth + 96) + 'px';
+      wrapper.style.height = (element.offsetHeight + 96) + 'px';
+      wrapper.style.padding = '48px';
+      wrapper.style.boxSizing = 'border-box';
+      wrapper.style.background = 'linear-gradient(135deg, #0d1117 0%, #161b22 100%)';
+      wrapper.style.borderRadius = '24px';
+      wrapper.style.border = '1px solid #30363d';
+      wrapper.style.overflow = 'hidden';
+      
+      // Clone the screenshot content
+      const clone = element.cloneNode(true);
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      
+      // Get actual rendered dimensions
+      const width = wrapper.offsetWidth;
+      const height = wrapper.offsetHeight;
+      console.log('Wrapper dimensions:', width, 'x', height);
+      
+      // Create canvas
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
       }
       
-      if (typeof html2canvas === 'undefined') {
-        // Try to load from CDN as last resort
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-          script.onload = () => {
-            console.log('html2canvas loaded from CDN');
-            resolve();
-          };
-          script.onerror = () => reject(new Error('Failed to load html2canvas'));
-          document.head.appendChild(script);
-        }).catch(() => {
-          showNotification('❌ Please refresh the page to enable downloads', 'error');
-          return;
-        });
+      ctx.scale(dpr, dpr);
+      
+      // Try using html2canvas if available
+      if (typeof html2canvas !== 'undefined') {
+        console.log('Using html2canvas to render');
+        try {
+          const renderedCanvas = await html2canvas(wrapper, {
+            backgroundColor: '#0d1117',
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            width: width,
+            height: height
+          });
+          
+          document.body.removeChild(wrapper);
+          
+          console.log('Canvas rendered successfully');
+          renderedCanvas.toBlob((blob) => {
+            if (blob) {
+              console.log('Blob created, size:', blob.size);
+              downloadBlob(blob, problemTitle);
+            } else {
+              console.error('Blob is null');
+              showNotification('❌ Failed to create image blob', 'error');
+            }
+          }, 'image/png', 1.0);
+        } catch (error) {
+          console.error('html2canvas error:', error);
+          document.body.removeChild(wrapper);
+          showNotification('❌ Failed to render screenshot', 'error');
+        }
+      } else {
+        console.log('html2canvas not available, loading from CDN');
+        // Try to load html2canvas from CDN
+        const loaded = await loadHtml2CanvasFromCDN();
+        
+        document.body.removeChild(wrapper);
+        
+        if (loaded && typeof html2canvas !== 'undefined') {
+          try {
+            const renderedCanvas = await html2canvas(wrapper, {
+              backgroundColor: '#0d1117',
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              logging: false
+            });
+            
+            console.log('Canvas rendered from CDN library');
+            renderedCanvas.toBlob((blob) => {
+              if (blob) {
+                console.log('Blob created, size:', blob.size);
+                downloadBlob(blob, problemTitle);
+              } else {
+                showNotification('❌ Failed to create image', 'error');
+              }
+            }, 'image/png', 1.0);
+          } catch (error) {
+            console.error('html2canvas error:', error);
+            showNotification('❌ Screenshot capture failed', 'error');
+          }
+        } else {
+          console.log('Fallback: using simple canvas rendering');
+          // Fallback to simple rendering
+          try {
+            // Fill background
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw border and gradient
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#0d1117');
+            gradient.addColorStop(1, '#161b22');
+            
+            // Draw rounded rectangle
+            const radius = 24;
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(width - radius, 0);
+            ctx.arcTo(width, 0, width, radius, radius);
+            ctx.lineTo(width, height - radius);
+            ctx.arcTo(width, height, width - radius, height, radius);
+            ctx.lineTo(radius, height);
+            ctx.arcTo(0, height, 0, height - radius, radius);
+            ctx.lineTo(0, radius);
+            ctx.arcTo(0, 0, radius, 0, radius);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Render text
+            ctx.fillStyle = '#c9d1d9';
+            ctx.font = '14px "JetBrains Mono", monospace';
+            
+            const text = element.textContent || '';
+            const lines = text.split('\n');
+            let y = 80;
+            
+            for (const line of lines) {
+              if (y > height - 30) break;
+              ctx.fillText(line.substring(0, 110), 80, y);
+              y += 20;
+            }
+            
+            console.log('Canvas rendered with fallback method');
+            canvas.toBlob((blob) => {
+              if (blob) {
+                console.log('Fallback blob created, size:', blob.size);
+                downloadBlob(blob, problemTitle);
+              } else {
+                console.error('Fallback blob creation failed');
+                showNotification('❌ Failed to create image', 'error');
+              }
+            }, 'image/png', 1.0);
+          } catch (error) {
+            console.error('Fallback rendering error:', error);
+            showNotification('❌ ' + error.message, 'error');
+          }
+        }
       }
       
-      // Proceed with download
-      await proceedWithDownload(element, problemTitle);
     } catch (error) {
       console.error('Download error:', error);
-      showNotification('❌ Download failed: ' + (error.message || 'Unknown error'), 'error');
+      showNotification('❌ ' + (error.message || 'Download failed'), 'error');
     }
   }
   
-  async function proceedWithDownload(element, problemTitle) {
-    try {
-      if (typeof html2canvas === 'undefined') {
-        showNotification('❌ html2canvas not available. Loading...', 'info');
-        // Wait a bit more and try again
-        await new Promise(resolve => setTimeout(resolve, 500));
-        if (typeof html2canvas === 'undefined') {
-          showNotification('❌ Please refresh the page to enable downloads', 'error');
-          return;
-        }
+  // Load html2canvas from CDN
+  function loadHtml2CanvasFromCDN() {
+    return new Promise((resolve) => {
+      if (typeof html2canvas !== 'undefined') {
+        console.log('html2canvas already loaded');
+        resolve(true);
+        return;
       }
       
-      showNotification('📸 Capturing screenshot...', 'info');
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      script.async = true;
       
-      // Use html2canvas with better settings
-      const canvas = await html2canvas(element, {
-        backgroundColor: '#1e40af',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: false,
-        foreignObjectRendering: false,
-        removeContainer: false,
-        imageTimeout: 15000,
-        onclone: (clonedDoc) => {
-          // Ensure all styles are preserved in the clone
-          const clonedElement = clonedDoc.getElementById('leetstreak-screenshot-content');
-          if (clonedElement) {
-            clonedElement.style.visibility = 'visible';
-          }
-        }
-      });
+      script.onload = () => {
+        console.log('html2canvas loaded from CDN');
+        resolve(true);
+      };
       
-      // Convert canvas to blob
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          showNotification('❌ Failed to generate image blob', 'error');
-          return;
-        }
-        
+      script.onerror = () => {
+        console.error('Failed to load html2canvas from CDN');
+        resolve(false);
+      };
+      
+      document.head.appendChild(script);
+    });
+  }
+  
+  // Download blob as file
+  function downloadBlob(blob, problemTitle) {
+    try {
+      console.log('Blob created, size:', blob.size);
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeTitle = (problemTitle || 'code_screenshot')
+        .replace(/[^a-z0-9_-]/gi, '_')
+        .substring(0, 50);
+      
+      link.download = `${safeTitle}_leetstreak.png`;
+      link.href = url;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      console.log('Triggering download: ' + link.download);
+      
+      // Trigger download
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
         try {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          const safeTitle = (problemTitle || 'code_screenshot')
-            .replace(/[^a-z0-9]/gi, '_')
-            .substring(0, 50);
-          link.download = `${safeTitle}_${Date.now()}.png`;
-          link.href = url;
-          link.style.display = 'none';
-          
-          document.body.appendChild(link);
-          
-          // Trigger download
-          link.click();
-          
-          // Cleanup after a delay
-          setTimeout(() => {
-            try {
-              if (document.body.contains(link)) {
-                document.body.removeChild(link);
-              }
-              URL.revokeObjectURL(url);
-            } catch (e) {
-              console.error('Cleanup error:', e);
-            }
-          }, 100);
-          
-          showNotification('✅ Downloaded successfully!', 'success');
-        } catch (error) {
-          console.error('Download link error:', error);
-          showNotification('❌ Download failed: ' + error.message, 'error');
+          if (document.body.contains(link)) {
+            document.body.removeChild(link);
+          }
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          console.error('Cleanup error:', e);
         }
-      }, 'image/png', 0.95);
+      }, 100);
       
+      showNotification('✅ Screenshot downloaded!', 'success');
     } catch (error) {
-      console.error('Download processing error:', error);
-      const errorMsg = error.message || 'Unknown error';
-      showNotification('❌ Download failed: ' + errorMsg, 'error');
+      console.error('Download blob error:', error);
+      showNotification('❌ ' + error.message, 'error');
     }
   }
+  
+  // Download canvas as image
   
   // Show notification
   function showNotification(message, type = 'info') {
@@ -1046,21 +1358,166 @@
   }
 
   function normalizeLanguage(lang) {
+    if (!lang || typeof lang !== 'string') return 'python3';
+    
+    const lowercaseLang = lang.toLowerCase().trim();
+    
     const map = {
-      'python': 'python3', 'py': 'python3',
-      'javascript': 'javascript', 'js': 'javascript',
-      'typescript': 'typescript', 'java': 'java',
-      'c++': 'cpp', 'cpp': 'cpp', 'c': 'c',
-      'csharp': 'csharp', 'go': 'go', 'rust': 'rust'
+      // Python
+      'python': 'python3', 'py': 'python3', 'python3': 'python3',
+      // JavaScript
+      'javascript': 'javascript', 'js': 'javascript', 'ecmascript': 'javascript',
+      // TypeScript
+      'typescript': 'typescript', 'ts': 'typescript',
+      // Java
+      'java': 'java',
+      // C++
+      'c++': 'cpp', 'cpp': 'cpp', 'c++17': 'cpp', 'c++20': 'cpp',
+      // C
+      'c': 'c',
+      // C#
+      'csharp': 'csharp', 'c#': 'csharp', 'cs': 'csharp',
+      // Go
+      'go': 'go',
+      // Rust
+      'rust': 'rust',
+      // PHP
+      'php': 'php',
+      // Swift
+      'swift': 'swift',
+      // Kotlin
+      'kotlin': 'kotlin', 'kt': 'kotlin',
+      // Ruby
+      'ruby': 'ruby', 'rb': 'ruby',
+      // R
+      'r': 'r',
+      // Scala
+      'scala': 'scala',
+      // Bash
+      'bash': 'bash', 'shell': 'bash',
+      // SQL
+      'sql': 'sql'
     };
-    return map[lang.toLowerCase()] || lang.toLowerCase();
+    
+    return map[lowercaseLang] || lowercaseLang;
+  }
+
+  function getDisplayLanguageName(lang) {
+    const displayMap = {
+      'python3': 'Python',
+      'javascript': 'JavaScript',
+      'typescript': 'TypeScript',
+      'java': 'Java',
+      'cpp': 'C++',
+      'c': 'C',
+      'csharp': 'C#',
+      'go': 'Go',
+      'rust': 'Rust',
+      'swift': 'Swift',
+      'kotlin': 'Kotlin',
+      'php': 'PHP',
+      'ruby': 'Ruby',
+      'r': 'R',
+      'scala': 'Scala',
+      'bash': 'Bash',
+      'sql': 'SQL'
+    };
+    return displayMap[lang.toLowerCase()] || (lang.charAt(0).toUpperCase() + lang.slice(1));
+  }
+
+  // Analyze code to detect language from syntax patterns
+  function analyzeCodeLanguage(code) {
+    if (!code || typeof code !== 'string') return null;
+    
+    const patterns = {
+      'java': [
+        /\bpublic\s+class\s+\w+/,
+        /\bpublic\s+static\s+void\s+main/,
+        /\bimport\s+java\./,
+        /\bnew\s+\w+\s*\(/
+      ],
+      'cpp': [
+        /#include\s*[<"]/,
+        /\busing\s+namespace\s+std/,
+        /std::/,
+        /\bvector<|map<|unordered_map</
+      ],
+      'c': [
+        /#include\s*["<](stdio|stdlib|string)[.>h"]/,
+        /printf\s*\(/,
+        /scanf\s*\(/,
+        /\bmalloc\s*\(/
+      ],
+      'python': [
+        /\bdef\s+\w+\s*\(/,
+        /\bclass\s+\w+\s*:/,
+        /\bif\s+__name__\s*==\s*['"]__main__['"]/,
+        /\bimport\s+\w+|from\s+\w+\s+import/
+      ],
+      'javascript': [
+        /\bfunction\s+\w+\s*\(|const\s+\w+\s*=\s*\(|let\s+\w+\s*=|var\s+\w+\s*=/,
+        /\bconst\s+.*=.*=>|function\s*\(/,
+        /console\.(log|error|warn)/,
+        /\brequire\s*\(|import\s+.*from/
+      ],
+      'typescript': [
+        /:\s*(string|number|boolean|any|void|interface|type|enum)/,
+        /\binterface\s+\w+|type\s+\w+\s*=/,
+        /public\s+\w+\s*:/,
+        /\b<\w+>/
+      ],
+      'go': [
+        /\bpackage\s+main/,
+        /\bfunc\s+\w+\s*\(/,
+        /\bimport\s*\(/,
+        /\berr\s+!=\s+nil/
+      ],
+      'rust': [
+        /\bfn\s+\w+\s*\(/,
+        /\bmut\s+\w+/,
+        /\b&str|String::|Vec::/,
+        /\blet\s+mut\s+\w+/
+      ],
+      'csharp': [
+        /\busing\s+System/,
+        /\bpublic\s+(class|interface|struct|enum)/,
+        /\bnamespace\s+\w+/,
+        /\bvar\s+\w+\s*=/
+      ],
+      'php': [
+        /<\?php|<\?/,
+        /\$\w+\s*=/,
+        /\bfunction\s+\w+\s*\(/,
+        /echo\s+|print\s+/
+      ]
+    };
+    
+    let bestMatch = { lang: null, score: 0 };
+    
+    for (const [lang, patternList] of Object.entries(patterns)) {
+      let score = 0;
+      for (const pattern of patternList) {
+        const matches = code.match(pattern);
+        if (matches) {
+          score += matches.length;
+        }
+      }
+      
+      if (score > bestMatch.score) {
+        bestMatch = { lang, score };
+      }
+    }
+    
+    return bestMatch.score > 0 ? bestMatch.lang : null;
   }
 
   function getLanguageExtension(lang) {
     const map = {
       'python3': 'py', 'javascript': 'js', 'typescript': 'ts',
       'java': 'java', 'cpp': 'cpp', 'c': 'c', 'csharp': 'cs',
-      'go': 'go', 'rust': 'rs', 'swift': 'swift', 'kotlin': 'kt'
+      'go': 'go', 'rust': 'rs', 'swift': 'swift', 'kotlin': 'kt',
+      'php': 'php', 'ruby': 'rb', 'r': 'r', 'scala': 'scala',
+      'bash': 'sh', 'sql': 'sql'
     };
     return map[lang] || 'txt';
   }
@@ -1070,16 +1527,30 @@
    */
   async function initGitHubSync() {
     try {
-      const result = await safeStorageGet(['github_sync_enabled', 'github_token']);
+      const result = await safeStorageGet(['github_sync_enabled', 'github_username', 'github_repo', 'github_token_encrypted']);
       
-      if (result.github_sync_enabled && result.github_token) {
+      console.log('📊 GitHub sync storage check:', {
+        enabled: result.github_sync_enabled,
+        hasEncryptedToken: !!result.github_token_encrypted,
+        username: result.github_username,
+        repo: result.github_repo
+      });
+      
+      // Check if github_sync_enabled is true AND we have encrypted token stored
+      if (result.github_sync_enabled && result.github_token_encrypted) {
         githubSyncEnabled = true;
-        console.log('LeetStreak: GitHub sync is enabled');
+        console.log('✅ LeetStreak: GitHub sync is ENABLED');
         
         // Monitor for submit button clicks
         setupSubmitButtonListener();
       } else {
-        console.log('LeetStreak: GitHub sync is disabled');
+        console.log('❌ LeetStreak: GitHub sync is DISABLED');
+        if (!result.github_sync_enabled) {
+          console.log('  - Reason: github_sync_enabled flag not set');
+        }
+        if (!result.github_token_encrypted) {
+          console.log('  - Reason: github_token_encrypted not found in storage');
+        }
       }
     } catch (error) {
       console.error('LeetStreak: Failed to initialize GitHub sync:', error);
@@ -1281,10 +1752,8 @@
 
     const timeout = 5 * 60 * 1000; // 5 minutes
     const startTime = Date.now();
-    let checkCount = 0;
 
     submissionWatcher = new MutationObserver(async (mutations) => {
-      checkCount++;
 
       // Check for timeout
       if (Date.now() - startTime > timeout) {
@@ -1296,12 +1765,27 @@
 
       // Check for "Accepted" status
       if (isSubmissionAccepted()) {
-        console.log('✅ LeetStreak: Submission ACCEPTED! Triggering GitHub sync...');
+        console.log('✅ LeetStreak: Submission ACCEPTED! Extracting stats...');
         submissionWatcher.disconnect();
-        showNotification('✅ Accepted! Syncing to GitHub...', 'success');
+        showNotification('✅ Accepted! Extracting stats...', 'success');
+        
+        // Wait a moment for stats to fully render
+        await new Promise(r => setTimeout(r, 1500));
+        
+        // Extract runtime and memory stats
+        const performanceStats = extractPerformanceStats();
+        console.log('📊 Performance stats:', performanceStats);
+        
+        // Merge performance stats with submission
+        const enrichedSubmission = {
+          ...submission,
+          ...performanceStats
+        };
+        
+        showNotification('✅ Syncing to GitHub...', 'success');
         
         // Send to background worker for GitHub sync
-        await triggerGitHubSync(submissionId, submission);
+        await triggerGitHubSync(submissionId, enrichedSubmission);
       }
 
       // Check for failure (stop watching)
@@ -1330,6 +1814,163 @@
     });
 
     console.log(`LeetStreak: Watching for submission result (timeout: ${timeout/1000}s)`);
+  }
+
+  /**
+   * Extract runtime and memory performance stats from the result page
+   * Called after submission is accepted
+   */
+  function extractPerformanceStats() {
+    const stats = {
+      runtime: null,
+      runtimePercentile: null,
+      memory: null,
+      memoryPercentile: null,
+      acceptanceRate: null
+    };
+
+    try {
+      // Strategy 1: Look for result details in the submission result area
+      const resultArea = document.querySelector('[data-e2e-locator="submission-result"]') || 
+                        document.querySelector('[class*="result"]');
+      
+      if (resultArea) {
+        const text = resultArea.textContent;
+        
+        // Extract runtime (e.g., "Runtime: 52 ms" or "52 ms")
+        const runtimeMatch = text.match(/(?:Runtime[:\s]*)?(\d+)\s*ms/i);
+        if (runtimeMatch) {
+          stats.runtime = `${runtimeMatch[1]} ms`;
+        }
+        
+        // Extract runtime percentile (e.g., "Beats 89.5%" or "faster than 89.5%")
+        const runtimePercentMatch = text.match(/(?:Beats|faster than)\s*([\d.]+)\s*%/i);
+        if (runtimePercentMatch) {
+          stats.runtimePercentile = parseFloat(runtimePercentMatch[1]).toFixed(1);
+        }
+        
+        // Extract memory (e.g., "Memory: 17.2 MB" or "17.2 MB")
+        const memoryMatch = text.match(/(?:Memory[:\s]*)?([\d.]+)\s*MB/i);
+        if (memoryMatch) {
+          stats.memory = `${memoryMatch[1]} MB`;
+        }
+        
+        // Extract memory percentile (e.g., "Beats 45.3%" after memory)
+        // This is tricky because there might be two "Beats X%" - one for runtime, one for memory
+        const allBeatsMatches = text.matchAll(/(?:Beats|less than)\s*([\d.]+)\s*%/gi);
+        const beatsValues = [...allBeatsMatches].map(m => parseFloat(m[1]));
+        if (beatsValues.length >= 2) {
+          // First is runtime, second is memory
+          stats.runtimePercentile = beatsValues[0].toFixed(1);
+          stats.memoryPercentile = beatsValues[1].toFixed(1);
+        } else if (beatsValues.length === 1 && !stats.runtimePercentile) {
+          stats.runtimePercentile = beatsValues[0].toFixed(1);
+        }
+      }
+
+      // Strategy 2: Look for specific elements with stats
+      const statElements = document.querySelectorAll('[class*="flex"][class*="items-center"]');
+      statElements.forEach(elem => {
+        const text = elem.textContent;
+        
+        // Check for runtime info
+        if (text.includes('ms') && !stats.runtime) {
+          const match = text.match(/(\d+)\s*ms/);
+          if (match) stats.runtime = `${match[1]} ms`;
+        }
+        
+        // Check for memory info
+        if (text.includes('MB') && !stats.memory) {
+          const match = text.match(/([\d.]+)\s*MB/);
+          if (match) stats.memory = `${match[1]} MB`;
+        }
+      });
+
+      // Strategy 3: Look for percentile bars/charts
+      const percentileElements = document.querySelectorAll('[class*="percent"], [class*="beats"]');
+      percentileElements.forEach(elem => {
+        const text = elem.textContent;
+        const match = text.match(/([\d.]+)\s*%/);
+        if (match) {
+          const value = parseFloat(match[1]).toFixed(1);
+          // Try to determine if it's runtime or memory based on context
+          const parent = elem.closest('[class*="runtime"], [class*="memory"]');
+          if (parent) {
+            if (parent.className.includes('runtime') && !stats.runtimePercentile) {
+              stats.runtimePercentile = value;
+            } else if (parent.className.includes('memory') && !stats.memoryPercentile) {
+              stats.memoryPercentile = value;
+            }
+          }
+        }
+      });
+
+      // Strategy 4: Extract from GraphQL data in page
+      const scripts = document.querySelectorAll('script');
+      scripts.forEach(script => {
+        const content = script.textContent;
+        
+        // Look for submission details in JSON
+        if (content.includes('statusRuntime') || content.includes('runtimePercentile')) {
+          try {
+            // Try to extract runtime
+            const runtimeMatch = content.match(/"statusRuntime"\s*:\s*"?(\d+)\s*ms"?/);
+            if (runtimeMatch && !stats.runtime) {
+              stats.runtime = `${runtimeMatch[1]} ms`;
+            }
+            
+            // Try to extract runtime percentile
+            const runtimePctMatch = content.match(/"runtimePercentile"\s*:\s*([\d.]+)/);
+            if (runtimePctMatch && !stats.runtimePercentile) {
+              stats.runtimePercentile = parseFloat(runtimePctMatch[1]).toFixed(1);
+            }
+            
+            // Try to extract memory
+            const memoryMatch = content.match(/"statusMemory"\s*:\s*"?([\d.]+)\s*MB"?/);
+            if (memoryMatch && !stats.memory) {
+              stats.memory = `${memoryMatch[1]} MB`;
+            }
+            
+            // Try to extract memory percentile
+            const memoryPctMatch = content.match(/"memoryPercentile"\s*:\s*([\d.]+)/);
+            if (memoryPctMatch && !stats.memoryPercentile) {
+              stats.memoryPercentile = parseFloat(memoryPctMatch[1]).toFixed(1);
+            }
+          } catch (e) {
+            // Continue
+          }
+        }
+      });
+
+      // Strategy 5: Extract acceptance rate from problem info
+      try {
+        const acceptanceElement = document.querySelector('[class*="acceptance"], [class*="Acceptance"]');
+        if (acceptanceElement) {
+          const match = acceptanceElement.textContent.match(/([\d.]+)\s*%/);
+          if (match) {
+            stats.acceptanceRate = parseFloat(match[1]).toFixed(1);
+          }
+        }
+        
+        // Also try from the problem description area
+        if (!stats.acceptanceRate) {
+          const allText = document.body.textContent;
+          const acceptMatch = allText.match(/Acceptance Rate\s*:?\s*([\d.]+)\s*%/i);
+          if (acceptMatch) {
+            stats.acceptanceRate = parseFloat(acceptMatch[1]).toFixed(1);
+          }
+        }
+      } catch (e) {
+        // Continue
+      }
+
+      console.log('📊 Extracted performance stats:', stats);
+      return stats;
+
+    } catch (error) {
+      console.error('Error extracting performance stats:', error);
+      return stats;
+    }
   }
 
   /**
@@ -1404,29 +2045,93 @@
    */
   async function triggerGitHubSync(submissionId, submission) {
     try {
-      console.log('LeetStreak: Sending GitHub sync message to background...');
-      
-      chrome.runtime.sendMessage({
-        type: 'GITHUB_SYNC_SUBMISSION',
+      console.log('🐙 LeetStreak: GitHub Auto-Sync triggered');
+      console.log('📤 Sending GitHub sync message to background with:', {
         submissionId,
-        submission
-      }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.error('❌ LeetStreak: Message error:', chrome.runtime.lastError);
-          showNotification('❌ Sync failed: Extension error', 'error');
-          return;
-        }
-        
-        if (response && response.success) {
-          console.log('✅ LeetStreak: GitHub sync initiated successfully');
-        } else {
-          console.error('❌ LeetStreak: GitHub sync failed:', response?.error);
-          showNotification('❌ Sync failed: ' + (response?.error || 'Unknown error'), 'error');
-        }
+        problemTitle: submission.problemTitle,
+        language: submission.language,
+        codeLength: submission.code?.length || 0
       });
+      
+      // Validate input
+      if (!submissionId) {
+        throw new Error('submissionId is required');
+      }
+      if (!submission) {
+        throw new Error('submission object is required');
+      }
+      console.log('✅ Submission data validated');
+      
+      // First, ping the service worker to ensure it's awake
+      console.log('🏓 Pinging service worker to keep it awake...');
+      try {
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Service worker ping timeout'));
+          }, 2000);
+          
+          console.log('Calling chrome.runtime.sendMessage with PING...');
+          chrome.runtime.sendMessage({ type: 'PING' }, (response) => {
+            console.log('PING response received:', response);
+            clearTimeout(timeout);
+            if (chrome.runtime.lastError) {
+              console.error('PING error:', chrome.runtime.lastError);
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(response);
+            }
+          });
+        });
+        console.log('✅ Service worker is awake');
+      } catch (pingError) {
+        console.warn('⚠️ Service worker ping failed, proceeding anyway:', pingError.message);
+      }
+      
+      // Send with retry logic in case service worker isn't ready
+      let retries = 0;
+      const maxRetries = 3;
+      
+      const sendMessage = () => {
+        console.log('🚀 LeetStreak: About to send GITHUB_SYNC_SUBMISSION message...');
+        console.log('📋 submissionId:', submissionId);
+        console.log('📋 submission object:', submission);
+        
+        chrome.runtime.sendMessage({
+          type: 'GITHUB_SYNC_SUBMISSION',
+          submissionId,
+          submission
+        }, (response) => {
+          console.log('📬 LeetStreak: Message callback received, response:', response);
+          if (chrome.runtime.lastError) {
+            console.error('❌ LeetStreak: Message delivery error:', chrome.runtime.lastError.message);
+            
+            if (retries < maxRetries) {
+              console.log(`⏳ Retry ${retries + 1}/${maxRetries}...`);
+              retries++;
+              setTimeout(sendMessage, 1000); // Retry after 1 second
+            } else {
+              showNotification('❌ Sync failed: Extension error', 'error');
+            }
+            return;
+          }
+          
+          if (response && response.success) {
+            console.log('✅ LeetStreak: GitHub auto-sync response received - SUCCESS');
+            showNotification('✅ Synced to GitHub!', 'success');
+          } else {
+            console.error('❌ LeetStreak: GitHub auto-sync response - FAILURE:', response?.error);
+            showNotification('⚠️ Auto-sync failed. Stored as pending.', 'info');
+          }
+        });
+      };
+      
+      console.log('About to call sendMessage function');
+      sendMessage();
+      console.log('sendMessage function called');
     } catch (error) {
-      console.error('❌ LeetStreak: Failed to trigger GitHub sync:', error);
-      showNotification('❌ Sync failed: ' + error.message, 'error');
+      console.error('❌ LeetStreak: Critical error in triggerGitHubSync:', error);
+      console.error('Error stack:', error.stack);
+      showNotification('❌ Sync error: ' + error.message, 'error');
     }
   }
 

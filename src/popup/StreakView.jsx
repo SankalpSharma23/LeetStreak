@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import MilestoneCelebration from './MilestoneCelebration';
 import GoalsPanel from './GoalsPanel';
 import DailyQuestion from './DailyQuestion';
@@ -10,7 +10,7 @@ function StreakView({ friends, currentStreak, onRefresh, refreshing }) {
   const [hoveredCell, setHoveredCell] = useState(null);
   const [showMilestone, setShowMilestone] = useState(false);
   const [celebratedMilestones, setCelebratedMilestones] = useState(new Set());
-  const [showStreakWarning, setShowStreakWarning] = useState(false);
+  const [dismissedStreakWarning, setDismissedStreakWarning] = useState(false);
 
   // Check for milestone and show celebration
   useEffect(() => {
@@ -21,12 +21,13 @@ function StreakView({ friends, currentStreak, onRefresh, refreshing }) {
     }
   }, [currentStreak, celebratedMilestones]);
 
-  // Check if user hasn't solved today and has active streak
-  useEffect(() => {
-    if (!friends || friends.length === 0) return;
+  // Compute streak warning as derived state
+  const showStreakWarning = useMemo(() => {
+    if (dismissedStreakWarning) return false;
+    if (!friends || friends.length === 0) return false;
     
     const userData = friends[0];
-    if (!userData?.submissionCalendar) return;
+    if (!userData?.submissionCalendar) return false;
     
     const today = new Date();
     const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
@@ -34,12 +35,8 @@ function StreakView({ friends, currentStreak, onRefresh, refreshing }) {
     const todayCount = parseInt(userData.submissionCalendar[todayTimestamp]) || 0;
     
     // Show warning if user has streak and hasn't solved today
-    if (currentStreak > 0 && todayCount === 0) {
-      setShowStreakWarning(true);
-    } else {
-      setShowStreakWarning(false);
-    }
-  }, [friends, currentStreak]);
+    return currentStreak > 0 && todayCount === 0;
+  }, [friends, currentStreak, dismissedStreakWarning]);
 
   // Safety check
   if (!friends || friends.length === 0) {
@@ -240,7 +237,7 @@ function StreakView({ friends, currentStreak, onRefresh, refreshing }) {
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="font-bold text-sm text-amber-400">Streak at Risk!</h4>
                 <button
-                  onClick={() => setShowStreakWarning(false)}
+                  onClick={() => setDismissedStreakWarning(true)}
                   className="ml-auto text-text-muted hover:text-text-main text-xs"
                 >
                   ✕

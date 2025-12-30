@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Flame, Sparkles, BarChart2 } from 'lucide-react';
 import { calculateMutualStreak } from '../shared/mutual-streak-calculator';
 
@@ -55,12 +55,47 @@ function formatLastActive(lastActiveDate) {
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
-function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmissionCalendar, timeFilter = 'all' }) {
-  const [submissionsExpanded, setSubmissionsExpanded] = useState(false);
+function FriendCard({ friend, isExpanded, onClick, isCurrentUser, mySubmissionCalendar, timeFilter = 'all', rank = 0 }) {
   const [allSubmissionsExpanded, setAllSubmissionsExpanded] = useState(false);
   const [showSubmissionsSection, setShowSubmissionsSection] = useState(false);
   const [hoveredCell, setHoveredCell] = useState(null);
   const [currentMonthOffset, setCurrentMonthOffset] = useState(0); // 0 = current month, 1 = last month, etc.
+
+  // Get last submission time - calculate once with useMemo (MUST be before any early returns)
+  const lastSubmissionText = useMemo(() => {
+    const recentSubmissions = friend?.recentSubmissions;
+    if (!recentSubmissions || !Array.isArray(recentSubmissions) || recentSubmissions.length === 0) {
+      return null;
+    }
+
+    const sorted = [...recentSubmissions].sort((a, b) => b.timestamp - a.timestamp);
+    const lastSub = sorted[0];
+    
+    // Calculate at useMemo time - this runs only when recentSubmissions changes
+    const now = new Date().getTime();
+    const lastTimestamp = parseInt(lastSub.timestamp) * 1000;
+    const diffMs = now - lastTimestamp;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      if (diffHours === 0) {
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        return diffMins < 60 ? `${diffMins} min${diffMins !== 1 ? 's' : ''} ago` : `${diffHours} hour ago`;
+      }
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
+    } else {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months !== 1 ? 's' : ''} ago`;
+    }
+  }, [friend?.recentSubmissions]);
 
   // Safety check
   if (!friend || !friend.profile || !friend.stats) {
@@ -183,73 +218,13 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
     return colors[level];
   };
 
-  const getRecentSolvedQuestions = () => {
-    if (!recentSubmissions || !Array.isArray(recentSubmissions) || recentSubmissions.length === 0) {
-      return [];
-    }
-
-    // Filter to only accepted submissions
-    const recentAccepted = recentSubmissions
-      .filter(sub => sub.statusDisplay === 'Accepted')
-      .sort((a, b) => b.timestamp - a.timestamp);
-
-    // Remove duplicates (same problem solved multiple times)
-    const uniqueProblems = [];
-    const seenTitles = new Set();
-    
-    for (const sub of recentAccepted) {
-      if (!seenTitles.has(sub.title)) {
-        seenTitles.add(sub.title);
-        uniqueProblems.push(sub);
-      }
-    }
-
-    return uniqueProblems; // Show all accepted problems
-  };
-
-  // Get last submission time
-  const getLastSubmission = () => {
-    if (!recentSubmissions || !Array.isArray(recentSubmissions) || recentSubmissions.length === 0) {
-      return null;
-    }
-
-    const sorted = [...recentSubmissions].sort((a, b) => b.timestamp - a.timestamp);
-    const lastSub = sorted[0];
-    
-    const now = Date.now();
-    const lastTimestamp = parseInt(lastSub.timestamp) * 1000;
-    const diffMs = now - lastTimestamp;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      if (diffHours === 0) {
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        return diffMins < 60 ? `${diffMins} min${diffMins !== 1 ? 's' : ''} ago` : `${diffHours} hour ago`;
-      }
-      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    } else if (diffDays < 30) {
-      const weeks = Math.floor(diffDays / 7);
-      return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
-    } else {
-      const months = Math.floor(diffDays / 30);
-      return `${months} month${months !== 1 ? 's' : ''} ago`;
-    }
-  };
-
   return (
     <div
       onClick={onClick}
       className={`relative bg-surface rounded-3xl shadow-md border-2 transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.01] ${
         isCurrentUser 
           ? 'border-accent/30 bg-gradient-to-br from-accent/10 to-surface ring-1 ring-accent/20' 
-          : rank <= 3 
-            ? 'border-primary/30 bg-gradient-to-br from-primary/5 to-surface' 
-            : 'border-surfaceHover/50'
+          : 'border-surfaceHover/50'
       } ${isExpanded ? 'ring-2 ring-primary/60 shadow-2xl' : ''}`}
     >
       {/* Active Badge */}
@@ -360,7 +335,7 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
         )}
 
         {/* Submissions Section Collapse */}
-        {(getLastSubmission() || (recentSubmissions && recentSubmissions.length > 0)) && (
+        {(lastSubmissionText || (recentSubmissions && recentSubmissions.length > 0)) && (
           <div className="mt-3">
             <div 
               onClick={(e) => {
@@ -388,11 +363,11 @@ function FriendCard({ friend, rank, isExpanded, onClick, isCurrentUser, mySubmis
             {showSubmissionsSection && (
               <div className="mt-2 space-y-2 animate-slide-up">
                 {/* Last Submission */}
-                {getLastSubmission() && (
+                {lastSubmissionText && (
                   <div className="px-2 py-1.5 bg-background/50 rounded-xl border border-surfaceHover">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-text-muted">Last submission:</span>
-                      <span className="font-semibold text-text-main">{getLastSubmission()}</span>
+                      <span className="font-semibold text-text-main">{lastSubmissionText}</span>
                     </div>
                   </div>
                 )}

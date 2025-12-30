@@ -289,7 +289,7 @@ describe('E2E Tests - LeetStreak Extension', () => {
       await page.waitForTimeout(1000);
 
       // Check if notification toast appears
-      const notificationVisible = await page.evaluate(() => {
+      const _notificationVisible = await page.evaluate(() => {
         return document.body.innerText.includes('solved today');
       });
 
@@ -325,7 +325,7 @@ describe('E2E Tests - LeetStreak Extension', () => {
       }
 
       // Verify problem was added
-      const queueData = await page.evaluate(() => {
+      const _queueData = await page.evaluate(() => {
         return new Promise((resolve) => {
           chrome.storage.local.get('problem_queue', (result) => {
             resolve(result.problem_queue || []);

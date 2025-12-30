@@ -46,7 +46,6 @@ export function detectMilestone(streak) {
 export function isStreakAtRisk(submissionCalendar, streak) {
   if (streak === 0) return false;
   
-  const todayUTC = getTodayUTC();
   const yesterdayUTC = getYesterdayUTC();
   
   const solvedToday = detectSolvedToday(submissionCalendar);

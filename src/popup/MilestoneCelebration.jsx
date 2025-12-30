@@ -1,7 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+
+// Generate confetti configuration outside component to avoid impure function calls during render
+const generateConfettiData = () => {
+  const emojis = ['🎉', '⭐', '🔥', '🎊', '✨', '💫'];
+  return [...Array(50)].map((_, i) => ({
+    id: i,
+    emoji: emojis[Math.floor(Math.random() * emojis.length)],
+    left: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 2 + Math.random() * 2
+  }));
+};
 
 function MilestoneCelebration({ streak, onClose }) {
   const [show, setShow] = useState(true);
+
+  // Generate confetti data once to avoid re-rendering issues
+  const confettiData = useMemo(() => generateConfettiData(), []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -27,18 +42,18 @@ function MilestoneCelebration({ streak, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
       {/* Confetti Effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(50)].map((_, i) => (
+        {confettiData.map((confetti) => (
           <div
-            key={i}
+            key={confetti.id}
             className="absolute animate-confetti"
             style={{
-              left: `${Math.random() * 100}%`,
+              left: `${confetti.left}%`,
               top: `-10%`,
-              animationDelay: `${Math.random() * 0.5}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
+              animationDelay: `${confetti.delay}s`,
+              animationDuration: `${confetti.duration}s`
             }}
           >
-            {['🎉', '⭐', '🔥', '🎊', '✨', '💫'][Math.floor(Math.random() * 6)]}
+            {confetti.emoji}
           </div>
         ))}
       </div>

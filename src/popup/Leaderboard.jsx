@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import FriendCard from './FriendCard';
 
-function Leaderboard({ friends, myData, myUsername, onRefresh }) {
+function Leaderboard({ friends, myData, myUsername }) {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [timeFilter, setTimeFilter] = useState('all'); // 'all', 'week', 'month'
 
@@ -142,7 +142,6 @@ function Leaderboard({ friends, myData, myUsername, onRefresh }) {
       ) : (
         <div className="p-4 space-y-2.5 animate-slide-up">
           {sortedFriends.filter(f => f && f.profile).map((friend, index) => {
-            const isActiveToday = friend.submissionCalendar && isSolvingToday(friend.submissionCalendar);
             
             // Calculate filtered stats for display
             let displayStats = friend.stats;

@@ -2,8 +2,13 @@
 const LEETCODE_API = 'https://leetcode.com/graphql';
 
 // Network configuration
-const MAX_RETRIES = 3;
-const TIMEOUT_MS = 10000; // 10 seconds
+const MAX_RETRIES = 2;
+const TIMEOUT_MS = 6000; // 6 seconds
+
+// Rate limiting
+import { RateLimiter } from '../shared/security-utils.js';
+import { secureFetch } from '../shared/certificate-pinning.js';
+const apiRateLimiter = new RateLimiter(30, 60000); // 30 calls per minute
 
 /**
  * Sleep utility for retry delays
@@ -22,6 +27,12 @@ function sleep(ms) {
 async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
   let lastError;
   
+  // Rate limiting check
+  if (!apiRateLimiter.isAllowed()) {
+    const waitTime = apiRateLimiter.getTimeUntilReset();
+    throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(waitTime / 1000)} seconds.`);
+  }
+  
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       // Check online status (in service worker context)
@@ -33,7 +44,8 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
       
-      const response = await fetch(url, {
+      // Use secure fetch with certificate validation
+      const response = await secureFetch(url, {
         ...options,
         signal: controller.signal
       });
@@ -126,6 +138,19 @@ const RECENT_SUBMISSIONS_QUERY = `
   }
 `;
 
+const ALL_SUBMISSIONS_QUERY = `
+  query allSubmissions($username: String!) {
+    matchedUser(username: $username) {
+      recentAcSubmissions(limit: 1000) {
+        id
+        title
+        titleSlug
+        timestamp
+      }
+    }
+  }
+`;
+
 export async function fetchUserData(username) {
   try {
     console.log(`[API] Fetching data for user: ${username}`);
@@ -213,6 +238,36 @@ export async function fetchUserData(username) {
     } catch (err) {
       console.warn('[API] Failed to fetch recent submissions:', err);
     }
+
+    // Fetch ALL accepted submissions (non-critical, comprehensive coverage of all solved problems)
+    let allAcceptedSubmissions = [];
+    try {
+      const allSubmissionsResponse = await fetch(LEETCODE_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: ALL_SUBMISSIONS_QUERY,
+          variables: { username },
+        }),
+      });
+      
+      if (allSubmissionsResponse.ok) {
+        const allSubmissionsData = await allSubmissionsResponse.json();
+        if (allSubmissionsData.errors) {
+          console.warn('[API] All submissions query error:', allSubmissionsData.errors);
+        } else {
+          allAcceptedSubmissions = allSubmissionsData.data?.matchedUser?.recentAcSubmissions || [];
+          console.log(`[API] Fetched ${allAcceptedSubmissions.length} all-time accepted submissions (limit 1000)`);
+          if (allAcceptedSubmissions.length > 0) {
+            console.log('[API] Sample submissions:', allAcceptedSubmissions.slice(0, 5).map(s => s.titleSlug));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[API] Failed to fetch all submissions:', err);
+    }
     
     console.log(`[API] Successfully fetched data for ${username}`);
     
@@ -222,6 +277,7 @@ export async function fetchUserData(username) {
         badges: badges,
         recentSubmissions: recentSubmissions
       },
+      allAcceptedSubmissions: allAcceptedSubmissions,
       contestRanking: profileData.data.userContestRanking,
       submissionCalendar: submissionCalendar
     };
@@ -236,9 +292,6 @@ export function calculateStreak(submissionCalendar) {
     return 0;
   }
 
-  const now = new Date();
-  const todayUTC = Math.floor(now.getTime() / 1000);
-  const oneDay = 86400;
   let streak = 0;
   
   // Convert submission calendar to Set of dates with submissions

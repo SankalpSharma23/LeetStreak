@@ -69,46 +69,64 @@ Compare stats, view leaderboards, and stay motivated together!
 
 ## ⚡ Quick Start
 
-Get LeetStreak running in **less than 5 minutes**:
+Get LeetStreak running in **less than 5 minutes** - **No npm install needed!**
 
-### 1️⃣ Clone the Repository
+### ✨ Easiest Method: Pre-Built Extension (Recommended for Users)
+
+If you just want to use the extension without development:
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/sankalpsharma99/LeetStreak.git
+   cd LeetStreak
+   ```
+
+2. **Load the Pre-Built Extension**
+   - Open `chrome://extensions/` in your browser
+   - Enable **Developer mode** (toggle in top-right)
+   - Click **Load unpacked**
+   - Select the **`dist`** folder from the cloned repository
+   - Done! 🎉 The extension is now installed!
+
+3. **Start Using**
+   - Click the **LeetStreak** icon in your Chrome toolbar
+   - Enter your **LeetCode username**
+   - Add friends and start competing!
+
+---
+
+### 🛠️ Development Method: Build from Source (For Contributors)
+
+If you want to modify the code or contribute:
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/sankalpsharma99/LeetStreak.git
+   cd LeetStreak
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Build the Extension**
+   ```bash
+   npm run build
+   ```
+
+4. **Load in Chrome**
+   - Go to `chrome://extensions/`
+   - Enable **Developer mode**
+   - Click **Load unpacked**
+   - Select the **`dist`** folder
+   - Done! 🎉
+
+**For Development with Hot-Reload:**
 ```bash
-git clone https://github.com/sankalpsharma99/LeetStreak.git
-cd LeetStreak
+npm run build:watch
 ```
-
-### 2️⃣ Install Dependencies
-```bash
-npm install
-```
-
-### 3️⃣ Build the Extension
-```bash
-npm run build
-```
-
-**Expected Output:**
-```
-✓ 1733 modules transformed (popup)
-✓ 12 modules transformed (service-worker)
-✓ 1 module transformed (content-script)
-dist/popup.html: 0.50 kB
-dist/service-worker.js: 57.70 kB
-dist/leetcode-integration.js: 39.85 kB
-✅ Extension built successfully!
-```
-
-### 4️⃣ Load in Chrome (See detailed instructions below)
-- Go to `chrome://extensions/`
-- Enable **Developer mode**
-- Click **Load unpacked**
-- Select the **`dist`** folder
-- Done! 🎉
-
-### 5️⃣ Start Using
-- Click the **LeetStreak** icon in your toolbar
-- Enter your **LeetCode username**
-- Add friends and start competing!
+Then reload the extension in Chrome as you make changes.
 
 ---
 

@@ -6,16 +6,6 @@ export default function GoalsPanel({ userData }) {
   const [goalProgress, setGoalProgress] = useState({});
   const [showAddGoal, setShowAddGoal] = useState(false);
 
-  useEffect(() => {
-    loadActiveGoals();
-  }, []);
-
-  useEffect(() => {
-    if (userData && activeGoals.length > 0) {
-      updateGoalProgress();
-    }
-  }, [userData?.stats?.total, userData?.submissionCalendar, activeGoals]);
-
   async function loadActiveGoals() {
     const goals = await getActiveGoals();
     setActiveGoalsState(goals);
@@ -44,6 +34,18 @@ export default function GoalsPanel({ userData }) {
     }
     setGoalProgress(progress);
   }
+
+  useEffect(() => {
+    loadActiveGoals();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (userData && activeGoals.length > 0) {
+      updateGoalProgress();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData?.stats?.total, userData?.submissionCalendar, activeGoals]);
 
   async function addGoal(goal) {
     const newGoals = [...activeGoals, goal];

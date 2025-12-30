@@ -1,28 +1,21 @@
 import { useState, useEffect } from 'react';
 import { 
-  generateInsights, 
-  calculateSuccessMetrics, 
-  analyzeTopicPerformance,
-  compareWithFriends 
+  generateInsights
 } from '../shared/insights-generator';
 
-export default function InsightsPanel({ userData, friendsData = [] }) {
+export default function InsightsPanel({ userData, _friendsData = [] }) {
   const [insights, setInsights] = useState([]);
   const [selectedInsight, setSelectedInsight] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailInsight, setDetailInsight] = useState(null);
-  const [activeTab, setActiveTab] = useState('insights'); // 'insights', 'analytics', 'comparison'
+  const [weekAgo] = useState(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // Lazy initial state
 
   useEffect(() => {
     if (userData) {
       const generatedInsights = generateInsights(userData);
-      setInsights(generatedInsights);
+      setInsights(generatedInsights); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [userData]);
-  
-  const successMetrics = userData ? calculateSuccessMetrics(userData.recentSubmissions) : null;
-  const topicPerformance = userData ? analyzeTopicPerformance(userData.recentSubmissions) : null;
-  const friendComparison = userData && friendsData.length > 0 ? compareWithFriends(userData, friendsData) : null;
 
   const handleViewDetails = (insight, e) => {
     e.stopPropagation();
@@ -68,7 +61,7 @@ export default function InsightsPanel({ userData, friendsData = [] }) {
           onClick={() => setSelectedInsight(selectedInsight === index ? null : index)}
         >
           <div className="flex items-start gap-3">
-            <div className="text-3xl">{insight.icon}</div>
+            <div className="text-3xl">{renderIcon(insight.icon, "w-8 h-8 text-primary")}</div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">
@@ -129,7 +122,7 @@ export default function InsightsPanel({ userData, friendsData = [] }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3 mb-4">
-              <div className="text-4xl">{detailInsight.icon}</div>
+              {renderIcon(detailInsight.icon, "w-12 h-12 text-primary")}
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-text-primary mb-1">
                   {detailInsight.category}
@@ -224,7 +217,6 @@ export default function InsightsPanel({ userData, friendsData = [] }) {
                       <span className="text-text-muted">Last 7 days:</span>
                       <span className="font-bold">{userData.recentSubmissions.filter(sub => {
                         const subDate = new Date(sub.timestamp * 1000);
-                        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                         return subDate > weekAgo;
                       }).length} submissions</span>
                     </div>

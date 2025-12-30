@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   // Check if we're building the service worker
   const isServiceWorker = process.env.BUILD_TARGET === 'service-worker';
   // Check if we're building the content script
@@ -72,6 +72,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     base: './',
     build: {
+      // Optimize chunk sizing for faster initial load
+      minify: 'esbuild',
       rollupOptions: {
         input: {
           popup: path.resolve(__dirname, 'popup.html'),
@@ -86,6 +88,10 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       emptyOutDir: true,
       sourcemap: false,
+      // Reduce chunk size thresholds for better loading
+      chunkSizeWarningLimit: 500,
+      // Enable CSS code splitting
+      cssCodeSplit: true,
     },
     resolve: {
       alias: {

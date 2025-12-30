@@ -3,6 +3,18 @@
  * Prevents XSS and validates user inputs
  */
 
+import { 
+  escapeHtml as escapeHtmlUtil, 
+  sanitizeCommitMessage as sanitizeCommitUtil,
+  validateUsername as validateUsernameUtil,
+  isValidGitHubToken,
+  isValidUrl,
+  RateLimiter
+} from './security-utils.js';
+
+// Re-export for convenience
+export { isValidGitHubToken, isValidUrl, RateLimiter };
+
 /**
  * Validate and normalize username
  * @param {string} username - Raw username input
@@ -10,26 +22,11 @@
  * @throws {Error} If username is invalid
  */
 export function validateUsername(username) {
-  if (!username || typeof username !== 'string') {
-    throw new Error('Username is required');
+  const result = validateUsernameUtil(username);
+  if (!result.valid) {
+    throw new Error(result.error);
   }
-  
-  // Remove whitespace
-  username = username.trim();
-  
-  // Check length
-  if (username.length < 1 || username.length > 50) {
-    throw new Error('Username must be 1-50 characters');
-  }
-  
-  // Only allow alphanumeric, underscore, hyphen
-  const usernameRegex = /^[a-zA-Z0-9_-]+$/;
-  if (!usernameRegex.test(username)) {
-    throw new Error('Username contains invalid characters. Only letters, numbers, underscore, and hyphen are allowed.');
-  }
-  
-  // Normalize to lowercase for storage consistency
-  return username.toLowerCase();
+  return result.username;
 }
 
 /**
@@ -38,16 +35,7 @@ export function validateUsername(username) {
  * @returns {string} Escaped text
  */
 export function escapeHtml(text) {
-  if (typeof text !== 'string') return text;
-  
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return escapeHtmlUtil(text);
 }
 
 /**
@@ -56,8 +44,5 @@ export function escapeHtml(text) {
  * @returns {string} Sanitized message
  */
 export function sanitizeCommitMessage(message) {
-  if (typeof message !== 'string') return '';
-  
-  // Remove potentially dangerous characters but keep meaningful ones
-  return message.replace(/[<>]/g, '').trim();
+  return sanitizeCommitUtil(message);
 }

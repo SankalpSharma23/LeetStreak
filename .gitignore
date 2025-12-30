@@ -4,6 +4,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# NOTE: dist/ is intentionally NOT ignored - it's pre-built for users to load directly
+# Users can clone and immediately load the extension without npm install
 
 # Environment variables
 .env

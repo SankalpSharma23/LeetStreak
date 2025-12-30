@@ -186,7 +186,7 @@ function analyzeRecentTrend(recentSubmissions) {
 }
 
 function analyzePotential(stats) {
-  const { easy = 0, medium = 0, hard = 0, total = 0 } = stats;
+  const { total = 0 } = stats;
   
   if (total === 0) return null;
   
@@ -220,7 +220,7 @@ function analyzePotential(stats) {
 /**
  * Calculate historical progress data for charts
  */
-export function calculateProgressData(userData, historicalData = []) {
+export function calculateProgressData(userData, _historicalData = []) {
   if (!userData || !userData.submissionCalendar) return [];
   
   try {
@@ -386,7 +386,7 @@ export function compareWithFriends(userData, friendsData = []) {
 }
 
 // Helper function to extract difficulty (simplified)
-function getDifficultyFromTitle(title) {
+function getDifficultyFromTitle(_title) {
   // This is a simplified version - in production you'd want to fetch actual difficulty
   // For now, we'll return 'medium' as default
   return 'Medium';

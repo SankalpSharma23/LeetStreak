@@ -1,24 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Bell, X, Flame, Target, AlertTriangle } from 'lucide-react';
 
 function NotificationToast({ notifications, onDismiss }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (notifications && notifications.length > 0) {
-      setVisible(true);
-    } else {
-      setVisible(false);
-    }
-  }, [notifications]);
+  // Compute visibility directly instead of storing in state
+  const visible = notifications && notifications.length > 0;
 
   const handleDismiss = () => {
-    setVisible(false);
-    setTimeout(() => {
-      if (notifications && notifications.length > 0) {
-        onDismiss(notifications[0].id);
-      }
-    }, 300);
+    if (notifications && notifications.length > 0) {
+      onDismiss(notifications[0].id);
+    }
   };
 
   if (!visible || !notifications || notifications.length === 0) {

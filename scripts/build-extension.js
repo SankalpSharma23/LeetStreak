@@ -7,11 +7,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 async function buildExtension() {
   const distDir = path.join(__dirname, '../dist');
   const publicDir = path.join(__dirname, '../public');
+  const videoDir = path.join(__dirname, '../video');
   
   console.log('📦 Building Chrome Extension...');
   
   // Ensure dist directory exists
   await fs.ensureDir(distDir);
+  
+  // Copy video files from video folder to public folder
+  console.log('🎬 Copying video assets...');
+  try {
+    await fs.ensureDir(publicDir);
+    const videoFiles = await fs.readdir(videoDir);
+    for (const file of videoFiles) {
+      const srcPath = path.join(videoDir, file);
+      const destPath = path.join(publicDir, file);
+      await fs.copy(srcPath, destPath, { overwrite: true });
+      console.log(`   ✓ Copied ${file}`);
+    }
+  } catch (err) {
+    console.warn('⚠️  Could not copy video files:', err.message);
+  }
   
   // Copy public folder (manifest.json and icons)
   console.log('📄 Copying manifest and icons...');

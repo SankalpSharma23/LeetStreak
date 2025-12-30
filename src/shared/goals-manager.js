@@ -80,7 +80,6 @@ export async function calculateGoalProgress(goal, userStats, submissionCalendar)
     } else if (goal.type === GOAL_TYPES.MONTHLY) {
       // Count problems solved this month (using UTC)
       const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
-      const startOfMonth = new Date(Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), 1));
       
       // submissionCalendar is already an object from storage
       const calendar = submissionCalendar;

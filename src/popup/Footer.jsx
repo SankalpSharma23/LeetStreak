@@ -4,18 +4,18 @@ import { Github, Bug } from 'lucide-react';
 function Footer() {
   const handleGitHubClick = () => {
     chrome.tabs.create({ 
-      url: 'https://github.com/sankalpsharma99/LeetStreak' 
+      url: 'https://github.com/SankalpSharma23/LeetStreak' 
     });
   };
 
   const handleBugReportClick = () => {
     chrome.tabs.create({ 
-      url: 'https://forms.gle/C3hsVfCnHrSw3c6' 
+      url: 'https://github.com/SankalpSharma23/LeetStreak/issues' 
     });
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-surface/80 backdrop-blur-md border-t border-surfaceHover/50 py-2.5 px-4 flex items-center justify-end z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-surface/80 backdrop-blur-md border-t border-surfaceHover/50 py-2.5 px-4 flex items-center justify-end z-40">
       <div className="flex items-center gap-2">
         {/* Bug Report Button */}
         <button

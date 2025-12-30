@@ -1,6 +1,6 @@
 import React from 'react';
 
-function LoadingSkeleton({ count = 3 }) {
+function LoadingSkeleton() {
   return (
     <div className="w-[400px] h-[600px] bg-gradient-to-br from-background via-background to-surface/30 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Animated Background Gradient */}

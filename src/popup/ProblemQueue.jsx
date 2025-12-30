@@ -5,61 +5,104 @@ function ProblemQueue() {
   const [newProblem, setNewProblem] = useState('');
   const [showInput, setShowInput] = useState(false);
 
-  useEffect(() => {
-    loadProblems();
-    
-    // Listen for changes to problem_queue (e.g., when added from LeetCode site)
-    const handleStorageChange = (changes, areaName) => {
-      if (areaName === 'local' && changes.problem_queue) {
-        loadProblems();
-      }
-    };
-    
-    chrome.storage.onChanged.addListener(handleStorageChange);
-    
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-    };
-  }, []);
-
   // Check if problems are already submitted and mark as completed
   const checkAndUpdateCompletedProblems = async (problemsList) => {
     try {
-      // Get user's LeetCode username
-      const { my_leetcode_username } = await chrome.storage.local.get('my_leetcode_username');
-      if (!my_leetcode_username || !problemsList || problemsList.length === 0) return;
+      console.log('checkAndUpdateCompletedProblems called with:', problemsList?.length, 'problems');
+      
+      // Get user's LeetCode username and friends_data directly
+      const storageResult = await chrome.storage.local.get(['my_leetcode_username', 'friends_data']);
+      const { my_leetcode_username } = storageResult;
+      const friendsData = storageResult.friends_data || {};
+      
+      console.log('Username:', my_leetcode_username, 'Problems count:', problemsList?.length);
+      
+      if (!my_leetcode_username || !problemsList || problemsList.length === 0) {
+        console.log('Missing username or problems list, skipping check');
+        return;
+      }
 
-      // Fetch user data to check recent submissions
-      const response = await chrome.runtime.sendMessage({
-        type: 'FETCH_STATS',
-        forceRefresh: false
-      });
-
-      if (response.success && response.friends && response.friends[my_leetcode_username]) {
-        const myData = response.friends[my_leetcode_username];
-        const recentSubmissions = myData?.profile?.recentSubmissions || [];
-        
-        // Get accepted problem slugs
-        const acceptedSlugs = new Set(
-          recentSubmissions
-            .filter(sub => sub.statusDisplay === 'Accepted')
-            .map(sub => sub.titleSlug)
-        );
-
-        // Update problems that are already completed
-        const updatedProblems = problemsList.map(problem => {
-          if (problem.slug && acceptedSlugs.has(problem.slug) && problem.status !== 'completed') {
-            return { ...problem, status: 'completed' };
-          }
-          return problem;
+      // Try both the exact username and lowercase version
+      let myData = friendsData[my_leetcode_username] || friendsData[my_leetcode_username.toLowerCase()];
+      
+      if (!myData) {
+        // Try fetching stats if local data isn't available
+        console.log('No user data in friends_data, fetching stats...');
+        const response = await chrome.runtime.sendMessage({
+          type: 'FETCH_STATS',
+          forceRefresh: true
         });
 
-        // Save if any changes
-        const hasChanges = updatedProblems.some((p, idx) => p.status !== problemsList[idx]?.status);
-        if (hasChanges) {
-          await chrome.storage.local.set({ problem_queue: updatedProblems });
-          setProblems(updatedProblems);
+        if (!response.success || !response.friends) {
+          console.log('Failed to fetch stats or no friends data');
+          return;
         }
+
+        // Try both exact and lowercase
+        myData = response.friends[my_leetcode_username] || response.friends[my_leetcode_username.toLowerCase()];
+        console.log('After fetch, found data:', !!myData, 'Looking for:', my_leetcode_username, 'Available keys:', Object.keys(response.friends || {}));
+        
+        if (!myData) {
+          console.log('User data not found even after fetch');
+          return;
+        }
+      }
+      
+      console.log('Got user data, checking submissions...');
+      
+      // Create a set of accepted problem slugs from multiple sources
+      const acceptedSlugs = new Set();
+      
+      // Check recentSubmissions (at root level)
+      const recentSubmissions = myData?.recentSubmissions || [];
+      console.log(`Found ${recentSubmissions.length} recent submissions`);
+      recentSubmissions.forEach(sub => {
+        if (sub.statusDisplay === 'Accepted') {
+          if (sub.titleSlug) acceptedSlugs.add(sub.titleSlug);
+          if (sub.slug) acceptedSlugs.add(sub.slug);
+        }
+      });
+
+      // Also check ALL accepted submissions (covers old submissions from >15 problems ago)
+      const allAccepted = myData?.allAcceptedSubmissions || [];
+      console.log(`Found ${allAccepted.length} all-time accepted submissions`);
+      allAccepted.forEach(sub => {
+        if (sub.titleSlug) acceptedSlugs.add(sub.titleSlug);
+        if (sub.slug) acceptedSlugs.add(sub.slug);
+      });
+
+      console.log('All accepted slugs:', Array.from(acceptedSlugs));
+
+      // Update problems that are already completed
+      const updatedProblems = problemsList.map(problem => {
+        // Try multiple slug variations
+        const slugVariations = [
+          problem.slug,
+          problem.url ? extractSlug(problem.url) : null,
+          extractSlug(problem.title),
+          String(problem.id)
+        ].filter(Boolean);
+        
+        console.log(`Problem "${problem.title}" - variations:`, slugVariations);
+        
+        // Check if any slug variation matches an accepted slug
+        const isCompleted = slugVariations.some(slug => acceptedSlugs.has(slug));
+        
+        if (isCompleted && problem.status !== 'completed') {
+          console.log(`✅ Marking "${problem.title}" as completed`);
+          return { ...problem, status: 'completed' };
+        }
+        return problem;
+      });
+
+      // Save if any changes
+      const hasChanges = updatedProblems.some((p, idx) => p.status !== problemsList[idx]?.status);
+      if (hasChanges) {
+        console.log('Saving updated queue with completed statuses');
+        await chrome.storage.local.set({ problem_queue: updatedProblems });
+        setProblems(updatedProblems);
+      } else {
+        console.log('No changes to queue needed');
       }
     } catch (error) {
       console.error('Error checking completed problems:', error);
@@ -71,11 +114,11 @@ function ProblemQueue() {
       const result = await chrome.storage.local.get('problem_queue');
       const rawProblems = result.problem_queue || [];
       
-      // Normalize problems: ensure all have an id field
-      const normalizedProblems = rawProblems.map(problem => {
+      // Normalize problems: ensure all have an id field (generate ID once, not in render)
+      const normalizedProblems = rawProblems.map((problem, index) => {
         // If no id, use slug as id, or generate one
         if (!problem.id) {
-          problem.id = problem.slug || `problem-${Date.now()}-${Math.random()}`;
+          problem.id = problem.slug || `problem-${Date.now()}-${index}`;
         }
         return problem;
       });
@@ -93,6 +136,24 @@ function ProblemQueue() {
       console.error('Error loading problems:', error);
     }
   };
+
+  useEffect(() => {
+    loadProblems();
+    
+    // Listen for changes to problem_queue (e.g., when added from LeetCode site)
+    const handleStorageChange = (changes, areaName) => {
+      if (areaName === 'local' && changes.problem_queue) {
+        loadProblems();
+      }
+    };
+    
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveProblems = async (updatedProblems) => {
     try {
@@ -174,10 +235,12 @@ function ProblemQueue() {
       const match = text.match(/problems\/([^/]+)/);
       return match ? match[1] : text;
     }
-    // Convert text to slug
-    return text.toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
+    // Convert text to slug - remove problem number prefix (e.g., "1. Two Sum" -> "two-sum")
+    const slug = text.toLowerCase()
+      .replace(/^\d+\.\s+/, '') // Remove leading number and dot
+      .replace(/[^\w\s-]/g, '')  // Remove special characters
+      .replace(/\s+/g, '-');     // Replace spaces with hyphens
+    return slug;
   };
 
   const removeProblem = (identifier) => {
@@ -293,8 +356,12 @@ function ProblemQueue() {
                       isCompleted ? 'text-green-400' : 'text-text-main'
                     }`}>
                       {problem.title}
-                      {isCompleted && <span className="ml-1.5 text-[8px] text-green-400/70">(Submitted)</span>}
                     </div>
+                    {isCompleted && (
+                      <span className="ml-auto flex-shrink-0 px-1.5 py-0.5 text-[8px] font-bold bg-green-500/20 text-green-400 rounded-full border border-green-500/30 whitespace-nowrap">
+                        ✓ Submitted
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-[8px] text-text-muted">
                     <span className={`font-semibold ${difficultyColors[problem.difficulty] || 'text-text-muted'}`}>
@@ -303,12 +370,6 @@ function ProblemQueue() {
                     {problem.number && <span>#{problem.number}</span>}
                     <span>•</span>
                     <span>Added {new Date(problem.addedAt).toLocaleDateString()}</span>
-                    {isCompleted && (
-                      <>
-                        <span>•</span>
-                        <span className="text-green-400 font-semibold">✓ Submitted</span>
-                      </>
-                    )}
                   </div>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">

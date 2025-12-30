@@ -3,7 +3,11 @@
  * Handles authentication, repository operations, and file management
  */
 
-import { sanitizeCommitMessage } from './validation.js';
+import { sanitizeCommitMessage, isValidGitHubToken, isValidUrl, RateLimiter } from './validation.js';
+import { retrieveEncryptedToken } from './secure-token-manager.js';
+import { secureFetch } from './certificate-pinning.js';
+
+const githubRateLimiter = new RateLimiter(60, 3600000); // 60 calls per hour (GitHub's rate limit)
 
 class GitHubSyncManager {
   constructor() {
@@ -20,17 +24,27 @@ class GitHubSyncManager {
   async initialize() {
     try {
       const result = await chrome.storage.local.get([
-        'github_token',
         'github_username',
         'github_repo',
         'github_sync_enabled'
       ]);
 
-      if (!result.github_sync_enabled || !result.github_token) {
+      if (!result.github_sync_enabled) {
         return { initialized: false, reason: 'Not enabled' };
       }
 
-      this.token = result.github_token;
+      // Retrieve encrypted token
+      const token = await retrieveEncryptedToken('github_token');
+      if (!token) {
+        return { initialized: false, reason: 'Token not found' };
+      }
+
+      // Validate token format
+      if (!isValidGitHubToken(token)) {
+        return { initialized: false, reason: 'Invalid token format' };
+      }
+
+      this.token = token;
       this.username = result.github_username;
       this.repoName = result.github_repo || 'leetcode-solutions';
       this.initialized = true;
@@ -50,8 +64,20 @@ class GitHubSyncManager {
       throw new Error('GitHub token not initialized');
     }
 
+    // Rate limiting check
+    if (!githubRateLimiter.isAllowed()) {
+      const waitTime = githubRateLimiter.getTimeUntilReset();
+      throw new Error(`GitHub API rate limit exceeded. Please wait ${Math.ceil(waitTime / 60000)} minutes.`);
+    }
+
+    // Validate URL
     const url = `${this.baseURL}${endpoint}`;
-    const response = await fetch(url, {
+    if (!isValidUrl(url, ['https:'], ['api.github.com'])) {
+      throw new Error('Invalid GitHub API URL');
+    }
+
+    // Use secure fetch with certificate validation
+    const response = await secureFetch(url, {
       ...options,
       headers: {
         'Authorization': `token ${this.token}`,
@@ -233,7 +259,7 @@ class GitHubSyncManager {
    */
   async syncSubmission(submission) {
     try {
-      const { code, language, problemTitle, problemSlug, difficulty, topics, questionNumber } = submission;
+      const { code, language, problemTitle, problemSlug, topics, questionNumber } = submission;
 
       // Generate file path
       const filePath = this.generateFilePath(problemSlug, questionNumber, language, topics);

@@ -1,6 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PartyPopper, Sparkles, Star, Zap } from 'lucide-react';
 import { getDailyChallenge, getChallengeProgress, updateChallengeProgress } from '../shared/daily-challenge';
+
+// Generate confetti configuration outside component to avoid impure function calls during render
+const generateConfettiIcons = () => {
+  const icons = [PartyPopper, Sparkles, Star, Zap, Star];
+  return [...Array(30)].map((_, i) => ({
+    id: i,
+    Icon: icons[Math.floor(Math.random() * icons.length)],
+    left: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 2 + Math.random() * 2
+  }));
+};
 
 export default function DailyChallengeCard({ userStats }) {
   const [challenge, setChallenge] = useState(null);
@@ -8,18 +20,10 @@ export default function DailyChallengeCard({ userStats }) {
   const [completed, setCompleted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  useEffect(() => {
-    if (userStats) {
-      loadChallenge();
-    }
-  }, []);
+  // Generate confetti data once to avoid re-rendering issues
+  const confettiIcons = useMemo(() => generateConfettiIcons(), []);
 
-  useEffect(() => {
-    if (userStats && challenge) {
-      updateProgress();
-    }
-  }, [userStats, challenge]);
-
+  // Declare functions before useEffect to avoid temporal dead zone
   async function loadChallenge() {
     const dailyChallenge = await getDailyChallenge(userStats);
     const { progress: currentProgress, completed: isCompleted } = await getChallengeProgress();
@@ -41,6 +45,20 @@ export default function DailyChallengeCard({ userStats }) {
     setProgress(newProgress);
     setCompleted(isCompleted);
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (userStats) {
+      loadChallenge(); // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [userStats]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (userStats && challenge) {
+      updateProgress(); // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [userStats, challenge]);
 
   async function resetChallenge() {
     try {
@@ -64,17 +82,16 @@ export default function DailyChallengeCard({ userStats }) {
     <div className="bg-surface border border-primary/30 rounded-xl p-6 shadow-lg relative overflow-hidden">
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none z-10">
-          {[...Array(30)].map((_, i) => {
-            const icons = [PartyPopper, Sparkles, Star, Zap, Star];
-            const Icon = icons[Math.floor(Math.random() * icons.length)];
+          {confettiIcons.map((confetti) => {
+            const Icon = confetti.Icon;
             return (
               <div
-                key={i}
+                key={confetti.id}
                 className="absolute animate-confetti"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 0.5}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`
+                  left: `${confetti.left}%`,
+                  animationDelay: `${confetti.delay}s`,
+                  animationDuration: `${confetti.duration}s`
                 }}
               >
                 <Icon className="w-6 h-6 text-primary" />

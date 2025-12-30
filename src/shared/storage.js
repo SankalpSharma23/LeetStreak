@@ -14,9 +14,9 @@ const WARN_THRESHOLD = 0.8; // Warn at 80%
  */
 async function getStorageUsage() {
   try {
-    const data = await chrome.storage.local.get(null);
-    const size = new Blob([JSON.stringify(data)]).size;
-    return size;
+    // Use Chrome's accurate API instead of Blob size
+    const bytesInUse = await chrome.storage.local.getBytesInUse(null);
+    return bytesInUse;
   } catch (error) {
     console.error('Error calculating storage usage:', error);
     return 0;
@@ -33,7 +33,7 @@ async function cleanupOldSubmissions() {
   const oneYearAgo = Math.floor(Date.now() / 1000) - (365 * 24 * 60 * 60);
   let cleanedCount = 0;
   
-  Object.entries(friends).forEach(([username, friend]) => {
+  Object.entries(friends).forEach(([_username, friend]) => {
     if (friend.submissionCalendar) {
       Object.keys(friend.submissionCalendar).forEach(timestamp => {
         if (parseInt(timestamp) < oneYearAgo) {
@@ -120,7 +120,7 @@ export async function saveFriend(username, data) {
       }
       
       const friends = await getAllFriends();
-      const isNewFriend = !friends[username];
+      const _isNewFriend = !friends[username];
       
       friends[username] = {
         ...data,
@@ -145,7 +145,7 @@ export async function saveFriend(username, data) {
           friends[username] = { ...data, lastUpdated: Date.now() };
           await chrome.storage.local.set({ [STORAGE_KEY]: { friends } });
           return { success: true, warning: 'Storage was full but cleaned up successfully' };
-        } catch (retryError) {
+        } catch (_retryError) {
           return { success: false, error: 'Storage quota exceeded. Please remove some friends.' };
         }
       }

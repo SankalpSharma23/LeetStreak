@@ -54,7 +54,7 @@ export function exportToCSV(userData) {
 export function exportToPDF(userData) {
   if (!userData) return;
 
-  const { profile, stats, submissionCalendar } = userData;
+  const { profile, stats } = userData;
   
   // Create a simple HTML structure for PDF
   const htmlContent = `
