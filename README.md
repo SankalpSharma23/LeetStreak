@@ -69,11 +69,11 @@ Compare stats, view leaderboards, and stay motivated together!
 
 ## ⚡ Quick Start
 
-Get LeetStreak running in **less than 5 minutes** - **No npm install needed!**
+Get LeetStreak running in **less than 3 minutes** - **Zero commands needed!**
 
-### ✨ Easiest Method: Pre-Built Extension (Recommended for Users)
+### ✨ Method 1: Load Pre-Built Extension (Recommended for Everyone)
 
-If you just want to use the extension without development:
+**No npm install, no npm run build - just clone and load!**
 
 1. **Clone the Repository**
    ```bash
@@ -81,23 +81,35 @@ If you just want to use the extension without development:
    cd LeetStreak
    ```
 
-2. **Load the Pre-Built Extension**
-   - Open `chrome://extensions/` in your browser
-   - Enable **Developer mode** (toggle in top-right)
-   - Click **Load unpacked**
-   - Select the **`dist`** folder from the cloned repository
-   - Done! 🎉 The extension is now installed!
+2. **Open Chrome Extensions**
+   - Type `chrome://extensions/` in your browser address bar
+   - Press Enter
 
-3. **Start Using**
-   - Click the **LeetStreak** icon in your Chrome toolbar
+3. **Enable Developer Mode**
+   - Toggle **Developer mode** (top-right corner)
+
+4. **Load the Extension**
+   - Click **Load unpacked** button
+   - Navigate to the cloned repository folder
+   - Select the **`dist`** folder (this contains the pre-built extension)
+   - Click **Select Folder**
+
+5. **Verify Installation**
+   - You should see LeetStreak appear in your extensions list with a 🔥 icon
+   - Click the extension icon in your Chrome toolbar
+
+6. **Start Using**
    - Enter your **LeetCode username**
-   - Add friends and start competing!
+   - Add friends by their LeetCode usernames
+   - View leaderboards, streaks, and compete with friends!
+
+✅ **That's it! You're done!**
 
 ---
 
-### 🛠️ Development Method: Build from Source (For Contributors)
+### 🛠️ Method 2: Build from Source (For Contributors/Developers)
 
-If you want to modify the code or contribute:
+If you want to modify the code or contribute to the project:
 
 1. **Clone the Repository**
    ```bash
@@ -117,16 +129,19 @@ If you want to modify the code or contribute:
 
 4. **Load in Chrome**
    - Go to `chrome://extensions/`
-   - Enable **Developer mode**
+   - Enable **Developer mode** (toggle in top-right)
    - Click **Load unpacked**
    - Select the **`dist`** folder
-   - Done! 🎉
+   - Click **Select Folder**
 
-**For Development with Hot-Reload:**
-```bash
-npm run build:watch
-```
-Then reload the extension in Chrome as you make changes.
+5. **Development Mode (Optional)**
+   - For hot-reload while developing:
+   ```bash
+   npm run build:watch
+   ```
+   - Make code changes
+   - Chrome will auto-reload the extension
+   - Manually refresh if needed
 
 ---
 
@@ -234,54 +249,133 @@ The build process:
 
 ## 📦 How to Load the Extension
 
-### Method 1: Load Unpacked (Recommended for Development)
+### 🚀 Step-by-Step Guide
 
-**Step 1: Open Extensions Page**
+#### **Step 1: Open Chrome Extensions Page**
+Choose one method:
+- **Method A:** Type `chrome://extensions/` in your browser address bar and press Enter
+- **Method B:** Click Chrome menu (⋮) → **More Tools** → **Extensions**
+
+#### **Step 2: Enable Developer Mode**
+- Look at the **top-right corner** of the Extensions page
+- Toggle the **Developer mode** switch to ON
+- New buttons should appear (Load unpacked, etc.)
+
+#### **Step 3: Load Unpacked Extension**
+- Click the **Load unpacked** button
+- A file browser will open
+- Navigate to your LeetStreak project folder
+- Select the **`dist`** folder (this is the pre-built extension)
+- Click **Select Folder**
+
+#### **Step 4: Verify Installation**
+- You should see "LeetStreak" appear in your extensions list
+- Look for the LeetStreak icon (🔥) in your Chrome toolbar
+- If the extension appears, you're done!
+
+#### **Step 5: Start Using LeetStreak**
+- Click the LeetStreak icon in your toolbar
+- You'll see the login screen or dashboard
+- Enter your LeetCode username
+- Add friends and start tracking!
+
+#### **Step 6: Pin the Extension (Optional but Recommended)**
+- Click the **Puzzle icon** (🧩) in your Chrome toolbar
+- Find LeetStreak in the list
+- Click the **Pin icon** next to it
+- LeetStreak will now be easily accessible in your toolbar
+
+---
+
+### ⚙️ Configuration After Loading
+
+**First Time Setup:**
+1. Open the LeetStreak extension
+2. Enter your **LeetCode username**
+3. Click **Verify** to validate your account
+4. Go to **Options** to customize:
+   - Dark/Light theme
+   - Notification preferences
+   - Auto-sync settings
+   - GitHub integration (optional)
+
+**Adding Friends:**
+1. Click **Add Friend** button
+2. Enter your friend's LeetCode username
+3. Click **Add** to add them to your leaderboard
+
+---
+
+### 🔄 Updating the Extension
+
+When you pull the latest code from GitHub:
+
+**For Pre-Built Extension Users:**
+```bash
+git pull origin main
+# The dist folder is already up-to-date!
+# Just refresh the extension page
 ```
-Chrome Menu → More Tools → Extensions
-OR
-Navigate to: chrome://extensions/
+
+**For Developers:**
+```bash
+git pull origin main
+npm run build
+# Extension in Chrome will auto-reload if using build:watch
 ```
 
-**Step 2: Enable Developer Mode**
-- Look for the toggle switch in the **top-right corner**
-- Click to enable "Developer mode"
-- You should now see additional options
+---
 
-**Step 3: Load Unpacked**
-- Click the **"Load unpacked"** button
-- Navigate to `L:\Projects\LeetStreak\dist`
-- Select the **`dist`** folder
-- Click **"Select Folder"**
+### ❓ Troubleshooting
 
-**Step 4: Verify Installation**
-- You should see LeetStreak in your extensions list
-- Click the **extension icon** in your Chrome toolbar
-- If you see the login screen, you're ready to go!
-
-**Step 5: Pin the Extension**
-- Right-click the LeetStreak icon in your toolbar
-- Select "Pin to Chrome"
-- The extension now has easy access in your toolbar
-
-### Method 2: Using ZIP (For Sharing)
-
-1. Build the extension: `npm run build`
-2. Create `dist.zip` file
-3. Share the ZIP file
-4. Others can extract and load unpacked
-
-### Troubleshooting Load Issues
-
-**❌ "Cannot load extension"**
-- Ensure `dist` folder exists and has `manifest.json`
+#### **Problem: "Cannot load extension"**
+**Solution:**
+- Ensure the `dist` folder exists in your project
+- Check that `dist/manifest.json` file exists
 - Try rebuilding: `npm run build`
-- Clear browser cache and reload
+- Close and reopen Chrome
+- Clear cache: Ctrl+Shift+Delete
 
-**❌ "Extension not appearing"**
-- Refresh the extensions page (top-left)
-- Toggle extension on/off
-- Try reloading with Ctrl+Shift+R
+#### **Problem: "Extension not showing in toolbar"**
+**Solution:**
+- Make sure Developer Mode is enabled
+- Refresh the extensions page (Ctrl+R)
+- Toggle the extension on/off using the checkbox
+- Pin the extension to your toolbar (Step 6 above)
+
+#### **Problem: "Extension shows errors or crashes"**
+**Solution:**
+- Right-click extension → **Remove**
+- Delete the `dist` folder: `rmdir dist`
+- Rebuild: `npm run build`
+- Reload unpacked again
+- Check Chrome DevTools (right-click → **Inspect**)
+
+#### **Problem: "Changes not reflecting after code update"**
+**Solution:**
+- Rebuild the extension: `npm run build`
+- Refresh the extension in Chrome (Ctrl+Shift+R)
+- Or better yet, use `npm run build:watch` for auto-rebuild
+
+#### **Problem: "GitHub sync not working"**
+**Solution:**
+- Go to extension **Options**
+- Check GitHub integration settings
+- Make sure you've authenticated with GitHub
+- Check your GitHub token isn't expired
+
+---
+
+### 📝 Quick Reference Card
+
+| Action | Command |
+|--------|---------|
+| **Open Extensions** | `chrome://extensions/` |
+| **Build Extension** | `npm run build` |
+| **Development Build** | `npm run build:watch` |
+| **Reload Extension** | Right-click extension → Reload |
+| **View Errors** | Right-click extension → Inspect |
+| **Remove Extension** | Click the trash icon in extensions list |
 
 **❌ "Blank popup when clicking extension"**
 - Open DevTools (Right-click → Inspect)
