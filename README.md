@@ -1641,6 +1641,108 @@ copies or substantial portions of the Software.
 - **React** - UI framework powering the extension
 - **Chrome Extensions Team** - Documentation and tools
 - **Open Source Community** - Inspiration and support
+- **AI Assistance** - Claude (Anthropic) for architecture design, code generation, documentation, testing strategy, and security analysis
+
+---
+
+## 🤖 AI Disclosure
+
+### How AI Was Used in This Project
+
+This project leverages AI assistance in the following areas:
+
+#### **1. Architecture & System Design**
+- AI helped design the component architecture and data flow
+- Provided insights on Chrome Extension best practices
+- Suggested scalability patterns for handling multiple users
+- Recommended security architecture (encryption, CSP, input validation)
+
+#### **2. Code Generation & Implementation**
+- Generated base code for React components
+- Created utility functions for storage, API calls, and calculations
+- Implemented error handling and retry logic
+- Built message passing system between popup and service worker
+
+#### **3. Security Analysis**
+- Conducted comprehensive security audit
+- Identified 5 medium-severity security issues
+- Provided remediation strategies with code examples
+- Recommended encryption implementation (AES-256-GCM)
+
+#### **4. Documentation**
+- Generated comprehensive README (1,687+ lines)
+- Created API documentation with examples
+- Wrote development guides and troubleshooting sections
+- Documented architecture diagrams and data flow
+
+#### **5. Testing Strategy**
+- Designed test structure (unit, integration, E2E)
+- Generated example test cases
+- Suggested test coverage targets (85%+)
+- Provided testing best practices
+
+#### **6. Performance Analysis**
+- Analyzed scalability limits (200 friends recommended)
+- Provided performance metrics and optimization suggestions
+- Recommended caching strategies
+- Suggested solutions for handling scale (UI virtualization, backend service, incremental sync)
+
+#### **7. Project Planning**
+- Helped create development roadmap (Q1-Q4 2026)
+- Broke down features into phases
+- Suggested prioritization strategy
+- Provided hiring manager feedback for improvement
+
+---
+
+### Why AI Was Used
+
+✅ **Faster Development** - Accelerated prototyping and implementation
+✅ **Best Practices** - Followed industry standards and patterns
+✅ **Comprehensive Documentation** - Created detailed guides for future developers
+✅ **Security Focus** - Identified and documented security considerations
+✅ **Quality Assurance** - Improved code quality through systematic review
+
+---
+
+### What AI Did NOT Do
+
+❌ **No Decision Making** - All technical decisions were human-reviewed and approved
+❌ **No Arbitrary Code** - All generated code was analyzed and validated
+❌ **No Blind Copy-Paste** - Every component was understood before inclusion
+❌ **No Shortcuts** - Security and architecture were prioritized over speed
+❌ **No Magic** - All AI suggestions were evaluated for correctness and relevance
+
+---
+
+### Transparency & Accountability
+
+This project demonstrates:
+- ✅ **Honest disclosure** - AI assistance is clearly documented
+- ✅ **Human oversight** - All AI output was reviewed and validated
+- ✅ **Technical understanding** - Code and architecture are fully understood
+- ✅ **Responsibility** - All decisions and implementations are owned
+- ✅ **Quality focus** - Production-ready, not just "AI-generated"
+
+---
+
+### AI Tools & Models Used
+
+- **Claude (Anthropic)** - Architecture, code generation, analysis, documentation
+- **Primary Use** - Design review, code generation, documentation, security analysis
+
+---
+
+### Learning & Skill Development
+
+While AI assisted with code generation and documentation:
+- ✅ Deep understanding of Chrome Extension APIs
+- ✅ Mastery of React hooks and component lifecycle
+- ✅ Knowledge of GraphQL integration and API design
+- ✅ Security principles (encryption, CSP, input validation)
+- ✅ Scalability thinking (caching, storage limits, performance)
+
+This is not a purely AI-generated project. Rather, it's a **human-designed project with AI-assisted implementation**, where every component has been understood, validated, and approved.
 
 ---
 
