@@ -21,14 +21,14 @@
 /* Light Theme Variables */
 [data-theme="light"] {
   --color-background: #ffffff;
-  --color-surface: #f4f4f5;
-  --color-surface-hover: #e4e4e7;
+  --color-surface: #f5f5f5;
+  --color-surface-hover: #e8e8e8;
   --color-primary: #f59e0b;
   --color-primary-hover: #d97706;
   --color-secondary: #10b981;
   --color-accent: #8b5cf6;
-  --color-text-main: #18181b;
-  --color-text-muted: #71717a;
+  --color-text-main: #000000;
+  --color-text-muted: #4b5563;
   --color-text-inverted: #ffffff;
   --color-leetcode-easy: #00b8a3;
   --color-leetcode-medium: #ffc01e;

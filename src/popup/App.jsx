@@ -19,6 +19,7 @@ function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [view, setView] = useState('streak'); // 'streak', 'leaderboard', 'analytics', 'github', or 'settings'
+  const [previousView, setPreviousView] = useState('streak'); // Track previous view for settings navigation
   const [myUsername, setMyUsername] = useState(null);
   const [setupMode, setSetupMode] = useState(false);
   const [setupUsername, setSetupUsername] = useState('');
@@ -346,7 +347,10 @@ function App() {
             <div className="flex border-b border-surfaceHover/50 bg-surface/95 backdrop-blur-md sticky top-0 z-10 shadow-lg">
               <div className="flex flex-1 gap-0 px-2">
                 <button
-                  onClick={() => setView('leaderboard')}
+                  onClick={() => {
+                    setPreviousView('leaderboard');
+                    setView('leaderboard');
+                  }}
                   className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
                     view === 'leaderboard' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                   }`}
@@ -360,7 +364,10 @@ function App() {
                   )}
                 </button>
                 <button
-                  onClick={() => setView('streak')}
+                  onClick={() => {
+                    setPreviousView('streak');
+                    setView('streak');
+                  }}
                   className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
                     view === 'streak' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                   }`}
@@ -374,7 +381,10 @@ function App() {
                   )}
                 </button>
                 <button
-                  onClick={() => setView('analytics')}
+                  onClick={() => {
+                    setPreviousView('analytics');
+                    setView('analytics');
+                  }}
                   className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
                     view === 'analytics' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                   }`}
@@ -388,7 +398,10 @@ function App() {
                   )}
                 </button>
                 <button
-                  onClick={() => setView('github')}
+                  onClick={() => {
+                    setPreviousView('github');
+                    setView('github');
+                  }}
                   className={`flex-1 py-3.5 px-2 text-sm font-medium transition-all duration-200 relative group ${
                     view === 'github' ? 'text-primary' : 'text-text-muted hover:text-text-main'
                   }`}
@@ -509,7 +522,16 @@ function App() {
         />
 
         {/* Footer */}
-        <Footer onSettingsClick={() => setView('settings')} />
+        <Footer onSettingsClick={() => {
+          if (view === 'settings') {
+            // If already in settings, go back to previous view
+            setView(previousView);
+          } else {
+            // If not in settings, open settings and save current view
+            setPreviousView(view);
+            setView('settings');
+          }
+        }} />
       </div>
     </>
   );

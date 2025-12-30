@@ -50,22 +50,30 @@ function ConfirmDialog({ title, message, confirmText, cancelText, onConfirm, onC
 
 function SettingsPanel({ onBack, theme, onThemeChange }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notificationFrequency, setNotificationFrequency] = useState('all');
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [autoSyncInterval, setAutoSyncInterval] = useState(30);
   const [username, setUsername] = useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showClearDataConfirm, setShowClearDataConfirm] = useState(false);
 
   useEffect(() => {
     // Load settings from storage
-    chrome.storage.local.get(['my_leetcode_username', 'notifications_enabled', 'auto_sync_enabled'], (data) => {
+    chrome.storage.local.get(['my_leetcode_username', 'notifications_enabled', 'notification_frequency', 'auto_sync_enabled', 'auto_sync_interval'], (data) => {
       if (data.my_leetcode_username) {
         setUsername(data.my_leetcode_username);
       }
       if (data.notifications_enabled !== undefined) {
         setNotificationsEnabled(data.notifications_enabled);
       }
+      if (data.notification_frequency) {
+        setNotificationFrequency(data.notification_frequency);
+      }
       if (data.auto_sync_enabled !== undefined) {
         setAutoSyncEnabled(data.auto_sync_enabled);
+      }
+      if (data.auto_sync_interval) {
+        setAutoSyncInterval(data.auto_sync_interval);
       }
     });
   }, []);
@@ -82,10 +90,20 @@ function SettingsPanel({ onBack, theme, onThemeChange }) {
     chrome.storage.local.set({ notifications_enabled: newValue });
   };
 
+  const handleNotificationFrequencyChange = (frequency) => {
+    setNotificationFrequency(frequency);
+    chrome.storage.local.set({ notification_frequency: frequency });
+  };
+
   const handleAutoSyncToggle = () => {
     const newValue = !autoSyncEnabled;
     setAutoSyncEnabled(newValue);
     chrome.storage.local.set({ auto_sync_enabled: newValue });
+  };
+
+  const handleAutoSyncIntervalChange = (minutes) => {
+    setAutoSyncInterval(minutes);
+    chrome.storage.local.set({ auto_sync_interval: minutes });
   };
 
   const handleClearData = async () => {
@@ -164,43 +182,159 @@ function SettingsPanel({ onBack, theme, onThemeChange }) {
         </div>
 
         {/* Notification Section */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h3 className="text-sm font-bold text-text-muted uppercase tracking-wide">Notifications</h3>
+          
+          {/* Enable/Disable Notifications */}
           <button
             onClick={handleNotificationsToggle}
-            className="w-full flex items-center justify-between p-4 bg-surface/50 border border-surfaceHover/30 rounded-lg hover:bg-surface/70 transition-all"
+            className="w-full flex items-center justify-between p-4 bg-surface/50 hover:bg-surface/70 rounded-xl border border-surfaceHover/30 transition-all duration-200 group"
           >
             <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-primary" />
+              <div className={`p-2 rounded-lg transition-all ${notificationsEnabled ? 'bg-primary/20' : 'bg-surfaceHover/50'}`}>
+                <Bell className={`w-4 h-4 ${notificationsEnabled ? 'text-primary' : 'text-text-muted'}`} />
+              </div>
               <div className="text-left">
-                <p className="font-medium text-text-main">Notifications</p>
-                <p className="text-xs text-text-muted">Milestones and updates</p>
+                <p className="text-sm font-semibold text-text-main">Notifications</p>
+                <p className="text-xs text-text-muted">{notificationsEnabled ? 'Enabled' : 'Disabled'}</p>
               </div>
             </div>
-            <div className={`w-12 h-7 rounded-full transition-all ${notificationsEnabled ? 'bg-primary' : 'bg-surfaceHover'}`}>
-              <div className={`w-5 h-5 rounded-full bg-white transition-transform mt-1 ${notificationsEnabled ? 'ml-6' : 'ml-1'}`}></div>
+            {/* Modern Toggle Switch */}
+            <div className={`relative inline-flex items-center w-12 h-7 rounded-full transition-all duration-300 ${notificationsEnabled ? 'bg-primary' : 'bg-surfaceHover'}`}>
+              <div className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${notificationsEnabled ? 'right-1' : 'left-1'}`}></div>
             </div>
           </button>
+
+          {/* Notification Frequency Slider */}
+          {notificationsEnabled && (
+            <div className="bg-surface/30 rounded-2xl p-5 border border-surfaceHover/20 backdrop-blur-sm space-y-4 animate-fade-in">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-text-main">Notification Frequency</label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      notificationFrequency === 'all' ? 'bg-primary/20 text-primary' : 
+                      notificationFrequency === 'important' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' : 
+                      'bg-text-muted/20 text-text-muted'
+                    }`}
+                    >
+                      {notificationFrequency === 'all' ? 'All Updates' : 
+                       notificationFrequency === 'important' ? 'Important' : 
+                       'Minimal'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Slider Container */}
+                <div className="relative space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="1"
+                    value={notificationFrequency === 'all' ? 0 : notificationFrequency === 'important' ? 1 : 2}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      handleNotificationFrequencyChange(val === 0 ? 'all' : val === 1 ? 'important' : 'minimal');
+                    }}
+                    className="w-full h-2 bg-gradient-to-r from-primary via-orange-500 to-gray-500 rounded-full appearance-none cursor-pointer transition-all"
+                    style={{
+                      WebkitAppearance: 'none',
+                      outline: 'none'
+                    }}
+                  />
+                  
+                  {/* Slider Labels */}
+                  <div className="flex justify-between text-xs text-text-muted font-medium px-1">
+                    <span>All</span>
+                    <span>Important</span>
+                    <span>Minimal</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-xs text-text-muted leading-relaxed">
+                  {notificationFrequency === 'all' && '🔔 Get notified for every milestone, achievement, and friend update'}
+                  {notificationFrequency === 'important' && '⭐ Only major streaks and top 3 leaderboard changes'}
+                  {notificationFrequency === 'minimal' && '🔕 Only critical alerts and important events'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sync Section */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-text-muted uppercase tracking-wide">Sync</h3>
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-text-muted uppercase tracking-wide">Sync Settings</h3>
+          
+          {/* Auto-Sync Toggle */}
           <button
             onClick={handleAutoSyncToggle}
-            className="w-full flex items-center justify-between p-4 bg-surface/50 border border-surfaceHover/30 rounded-lg hover:bg-surface/70 transition-all"
+            className="w-full flex items-center justify-between p-4 bg-surface/50 hover:bg-surface/70 rounded-xl border border-surfaceHover/30 transition-all duration-200 group"
           >
             <div className="flex items-center gap-3">
-              <RotateCcw className="w-5 h-5 text-primary" />
+              <div className={`p-2 rounded-lg transition-all ${autoSyncEnabled ? 'bg-primary/20' : 'bg-surfaceHover/50'}`}>
+                <RotateCcw className={`w-4 h-4 ${autoSyncEnabled ? 'text-primary' : 'text-text-muted'}`} />
+              </div>
               <div className="text-left">
-                <p className="font-medium text-text-main">Auto-Sync</p>
-                <p className="text-xs text-text-muted">Every 30 minutes</p>
+                <p className="text-sm font-semibold text-text-main">Auto-Sync</p>
+                <p className="text-xs text-text-muted">{autoSyncEnabled ? 'Enabled' : 'Disabled'}</p>
               </div>
             </div>
-            <div className={`w-12 h-7 rounded-full transition-all ${autoSyncEnabled ? 'bg-primary' : 'bg-surfaceHover'}`}>
-              <div className={`w-5 h-5 rounded-full bg-white transition-transform mt-1 ${autoSyncEnabled ? 'ml-6' : 'ml-1'}`}></div>
+            {/* Modern Toggle Switch */}
+            <div className={`relative inline-flex items-center w-12 h-7 rounded-full transition-all duration-300 ${autoSyncEnabled ? 'bg-primary' : 'bg-surfaceHover'}`}>
+              <div className={`absolute w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${autoSyncEnabled ? 'right-1' : 'left-1'}`}></div>
             </div>
           </button>
+
+          {/* Sync Frequency Slider */}
+          {autoSyncEnabled && (
+            <div className="bg-surface/30 rounded-2xl p-5 border border-surfaceHover/20 backdrop-blur-sm space-y-4 animate-fade-in">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-text-main">Sync Frequency</label>
+                  <span className="text-sm font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
+                    Every {autoSyncInterval}m
+                  </span>
+                </div>
+
+                {/* Slider Container */}
+                <div className="relative space-y-3">
+                  <input
+                    type="range"
+                    min="15"
+                    max="60"
+                    step="5"
+                    value={autoSyncInterval}
+                    onChange={(e) => handleAutoSyncIntervalChange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gradient-to-r from-primary to-primary/50 rounded-full appearance-none cursor-pointer transition-all"
+                    style={{
+                      WebkitAppearance: 'none',
+                      outline: 'none'
+                    }}
+                  />
+                  
+                  {/* Slider Labels */}
+                  <div className="flex justify-between text-xs text-text-muted font-medium px-1">
+                    <span>15m</span>
+                    <span>30m</span>
+                    <span>45m</span>
+                    <span>60m</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="bg-primary/5 rounded-lg p-3 space-y-1.5">
+                  <p className="text-xs font-medium text-primary flex items-center gap-2">
+                    <span>⚡</span> Smart Sync
+                  </p>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    Syncs every {autoSyncInterval} minutes to keep your friend's stats up to date while conserving battery
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions Section */}
@@ -264,6 +398,82 @@ function SettingsPanel({ onBack, theme, onThemeChange }) {
           isDangerous={true}
         />
       )}
+
+      <style>{`
+        /* Modern Apple-like Slider Styling */
+        input[type='range'] {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 6px;
+          border-radius: 999px;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        /* Thumb/Handle Styling */
+        input[type='range']::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+          border: 2px solid #3b82f6;
+          transition: all 0.2s ease;
+        }
+
+        input[type='range']::-webkit-slider-thumb:hover {
+          width: 22px;
+          height: 22px;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        input[type='range']::-webkit-slider-thumb:active {
+          transform: scale(0.95);
+        }
+
+        input[type='range']::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: white;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+          border: 2px solid #3b82f6;
+          transition: all 0.2s ease;
+        }
+
+        input[type='range']::-moz-range-thumb:hover {
+          width: 22px;
+          height: 22px;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        input[type='range']::-moz-range-track {
+          background: transparent;
+          border: none;
+        }
+
+        /* Smooth animation for fade-in */
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
